@@ -1,0 +1,302 @@
+Car_Name,Year,Selling_Price,Present_Price,Kms_Driven,Fuel_Type,Seller_Type,Transmission,Owner,location,City,Base_Model,DemandScore,days_in_inventory,past_demand,days_on_platform
+ritz,2014,3.35,5.59,27000,Petrol,Dealer,Manual,0,Pune,Mumbai,ritz,90,26,97,20
+sx4,2013,4.75,9.54,43000,Diesel,Dealer,Manual,0,Jaipur,Chennai,sx4,66,145,71,55
+ciaz,2017,7.25,9.85,6900,Petrol,Dealer,Manual,0,Kolkata,Chennai,ciaz,92,31,85,84
+wagon r,2011,2.85,4.15,5200,Petrol,Dealer,Manual,0,Bangalore,Jaipur,wagon r,95,102,90,39
+swift,2014,4.6,6.87,42450,Diesel,Dealer,Manual,0,Lucknow,Hyderabad,swift,92,79,95,30
+vitara brezza,2018,9.25,9.83,2071,Diesel,Dealer,Manual,0,Hyderabad,Pune,vitara brezza,47,131,38,38
+ciaz,2015,6.75,8.12,18796,Petrol,Dealer,Manual,0,Ahmedabad,Jaipur,ciaz,33,54,37,10
+s cross,2015,6.5,8.61,33429,Diesel,Dealer,Manual,0,Mumbai,Pune,s cross,58,35,54,40
+ciaz,2016,8.75,8.89,20273,Diesel,Dealer,Manual,0,Kolkata,Kolkata,ciaz,77,50,80,80
+ciaz,2015,7.45,8.92,42367,Diesel,Dealer,Manual,0,Hyderabad,Kolkata,ciaz,77,142,83,15
+alto 800,2017,2.85,3.6,2135,Petrol,Dealer,Manual,0,Bangalore,Chennai,alto 800,73,108,71,17
+ciaz,2015,6.85,10.38,51000,Diesel,Dealer,Manual,0,Kolkata,Hyderabad,ciaz,44,48,36,77
+ciaz,2015,7.5,9.94,15000,Petrol,Dealer,Automatic,0,Mumbai,Mumbai,ciaz,83,68,85,58
+ertiga,2015,6.1,7.71,26000,Petrol,Dealer,Manual,0,Bangalore,Jaipur,ertiga,67,132,62,77
+dzire,2009,2.25,7.21,77427,Petrol,Dealer,Manual,0,Chennai,Pune,dzire,73,114,69,74
+ertiga,2016,7.75,10.79,43000,Diesel,Dealer,Manual,0,Jaipur,Lucknow,ertiga,87,75,88,10
+ertiga,2015,7.25,10.79,41678,Diesel,Dealer,Manual,0,Chennai,Kolkata,ertiga,53,148,52,32
+ertiga,2016,7.75,10.79,43000,Diesel,Dealer,Manual,0,Delhi,Delhi,ertiga,83,28,75,14
+wagon r,2015,3.25,5.09,35500,CNG,Dealer,Manual,0,Bangalore,Jaipur,wagon r,95,90,97,33
+sx4,2010,2.65,7.98,41442,Petrol,Dealer,Manual,0,Mumbai,Ahmedabad,sx4,39,70,29,78
+alto k10,2016,2.85,3.95,25000,Petrol,Dealer,Manual,0,Pune,Jaipur,alto k10,38,58,28,54
+ignis,2017,4.9,5.71,2400,Petrol,Dealer,Manual,0,Chennai,Pune,ignis,94,56,90,68
+sx4,2011,4.4,8.01,50000,Petrol,Dealer,Automatic,0,Delhi,Kolkata,sx4,77,88,75,79
+alto k10,2014,2.5,3.46,45280,Petrol,Dealer,Manual,0,Pune,Pune,alto k10,53,104,51,30
+wagon r,2013,2.9,4.41,56879,Petrol,Dealer,Manual,0,Ahmedabad,Delhi,wagon r,45,101,49,26
+swift,2011,3.0,4.99,20000,Petrol,Dealer,Manual,0,Hyderabad,Delhi,swift,58,25,50,27
+swift,2013,4.15,5.87,55138,Petrol,Dealer,Manual,0,Delhi,Kolkata,swift,86,21,95,41
+swift,2017,6.0,6.49,16200,Petrol,Individual,Manual,0,Hyderabad,Hyderabad,swift,92,42,83,73
+alto k10,2010,1.95,3.95,44542,Petrol,Dealer,Manual,0,Kolkata,Kolkata,alto k10,42,20,46,15
+ciaz,2015,7.45,10.38,45000,Diesel,Dealer,Manual,0,Chennai,Lucknow,ciaz,94,40,99,68
+ritz,2012,3.1,5.98,51439,Diesel,Dealer,Manual,0,Delhi,Hyderabad,ritz,35,82,34,71
+ritz,2011,2.35,4.89,54200,Petrol,Dealer,Manual,0,Jaipur,Hyderabad,ritz,35,30,42,39
+swift,2014,4.95,7.49,39000,Diesel,Dealer,Manual,0,Lucknow,Hyderabad,swift,92,91,94,27
+ertiga,2014,6.0,9.95,45000,Diesel,Dealer,Manual,0,Chennai,Kolkata,ertiga,53,72,46,63
+dzire,2014,5.5,8.06,45000,Diesel,Dealer,Manual,0,Pune,Bangalore,dzire,40,108,48,12
+sx4,2011,2.95,7.74,49998,CNG,Dealer,Manual,0,Bangalore,Chennai,sx4,66,130,62,56
+dzire,2015,4.65,7.2,48767,Petrol,Dealer,Manual,0,Pune,Mumbai,dzire,88,48,91,36
+800,2003,0.35,2.28,127000,Petrol,Individual,Manual,0,Jaipur,Lucknow,800,46,57,44,15
+alto k10,2016,3.0,3.76,10079,Petrol,Dealer,Manual,0,Jaipur,Kolkata,alto k10,42,144,42,57
+sx4,2003,2.25,7.98,62000,Petrol,Dealer,Manual,0,Lucknow,Hyderabad,sx4,53,82,45,67
+baleno,2016,5.85,7.87,24524,Petrol,Dealer,Automatic,0,Pune,Kolkata,baleno,63,60,54,84
+alto k10,2014,2.55,3.98,46706,Petrol,Dealer,Manual,0,Pune,Kolkata,alto k10,42,146,40,36
+sx4,2008,1.95,7.15,58000,Petrol,Dealer,Manual,0,Hyderabad,Chennai,sx4,66,54,68,62
+dzire,2014,5.5,8.06,45780,Diesel,Dealer,Manual,0,Lucknow,Pune,dzire,73,63,79,80
+omni,2012,1.25,2.69,50000,Petrol,Dealer,Manual,0,Bangalore,Mumbai,omni,78,133,71,67
+ciaz,2014,7.5,12.04,15000,Petrol,Dealer,Automatic,0,Kolkata,Pune,ciaz,95,88,92,35
+ritz,2013,2.65,4.89,64532,Petrol,Dealer,Manual,0,Hyderabad,Ahmedabad,ritz,34,132,42,30
+wagon r,2006,1.05,4.15,65000,Petrol,Dealer,Manual,0,Bangalore,Chennai,wagon r,50,136,54,18
+ertiga,2015,5.8,7.71,25870,Petrol,Dealer,Manual,0,Pune,Lucknow,ertiga,87,75,79,73
+ciaz,2017,7.75,9.29,37000,Petrol,Dealer,Automatic,0,Mumbai,Pune,ciaz,95,149,93,66
+fortuner,2012,14.9,30.61,104707,Diesel,Dealer,Automatic,0,Bangalore,Bangalore,fortuner,60,133,68,39
+fortuner,2015,23.0,30.61,40000,Diesel,Dealer,Automatic,0,Delhi,Jaipur,fortuner,84,106,81,41
+innova,2017,18.0,19.77,15000,Diesel,Dealer,Automatic,0,Pune,Ahmedabad,innova,34,142,24,67
+fortuner,2013,16.0,30.61,135000,Diesel,Individual,Automatic,0,Kolkata,Jaipur,fortuner,84,128,88,45
+innova,2005,2.75,10.21,90000,Petrol,Individual,Manual,0,Mumbai,Chennai,innova,63,25,67,67
+corolla altis,2009,3.6,15.04,70000,Petrol,Dealer,Automatic,0,Ahmedabad,Chennai,corolla altis,76,136,66,52
+etios cross,2015,4.5,7.27,40534,Petrol,Dealer,Manual,0,Delhi,Jaipur,etios cross,62,20,65,55
+corolla altis,2010,4.75,18.54,50000,Petrol,Dealer,Manual,0,Jaipur,Chennai,corolla altis,76,41,80,27
+etios g,2014,4.1,6.8,39485,Petrol,Dealer,Manual,1,Delhi,Jaipur,etios g,47,88,47,23
+fortuner,2014,19.99,35.96,41000,Diesel,Dealer,Automatic,0,Hyderabad,Mumbai,fortuner,74,91,73,83
+corolla altis,2013,6.95,18.61,40001,Petrol,Dealer,Manual,0,Hyderabad,Chennai,corolla altis,76,66,76,27
+etios cross,2015,4.5,7.7,40588,Petrol,Dealer,Manual,0,Pune,Pune,etios cross,92,107,101,22
+fortuner,2014,18.75,35.96,78000,Diesel,Dealer,Automatic,0,Kolkata,Lucknow,fortuner,30,70,22,15
+fortuner,2015,23.5,35.96,47000,Diesel,Dealer,Automatic,0,Pune,Ahmedabad,fortuner,52,113,44,82
+fortuner,2017,33.0,36.23,6000,Diesel,Dealer,Automatic,0,Jaipur,Mumbai,fortuner,74,20,78,66
+etios liva,2014,4.75,6.95,45000,Diesel,Dealer,Manual,0,Ahmedabad,Ahmedabad,etios liva,66,39,65,75
+innova,2017,19.75,23.15,11000,Petrol,Dealer,Automatic,0,Jaipur,Hyderabad,innova,55,71,54,25
+fortuner,2010,9.25,20.45,59000,Diesel,Dealer,Manual,0,Jaipur,Hyderabad,fortuner,85,91,84,66
+corolla altis,2011,4.35,13.74,88000,Petrol,Dealer,Manual,0,Mumbai,Bangalore,corolla altis,49,112,54,68
+corolla altis,2016,14.25,20.91,12000,Petrol,Dealer,Manual,0,Lucknow,Ahmedabad,corolla altis,84,123,79,14
+etios liva,2014,3.95,6.76,71000,Diesel,Dealer,Manual,0,Mumbai,Kolkata,etios liva,85,129,75,56
+corolla altis,2011,4.5,12.48,45000,Diesel,Dealer,Manual,0,Ahmedabad,Kolkata,corolla altis,64,84,57,22
+corolla altis,2013,7.45,18.61,56001,Petrol,Dealer,Manual,0,Chennai,Hyderabad,corolla altis,66,125,74,85
+etios liva,2011,2.65,5.71,43000,Petrol,Dealer,Manual,0,Jaipur,Bangalore,etios liva,58,142,66,66
+etios cross,2014,4.9,8.93,83000,Diesel,Dealer,Manual,0,Chennai,Mumbai,etios cross,62,45,62,17
+etios g,2015,3.95,6.8,36000,Petrol,Dealer,Manual,0,Chennai,Bangalore,etios g,63,106,61,83
+corolla altis,2013,5.5,14.68,72000,Petrol,Dealer,Manual,0,Chennai,Lucknow,corolla altis,30,69,38,69
+corolla,2004,1.5,12.35,135154,Petrol,Dealer,Automatic,0,Delhi,Ahmedabad,corolla,78,106,80,53
+corolla altis,2010,5.25,22.83,80000,Petrol,Dealer,Automatic,0,Jaipur,Chennai,corolla altis,76,144,78,51
+fortuner,2012,14.5,30.61,89000,Diesel,Dealer,Automatic,0,Chennai,Mumbai,fortuner,74,46,78,75
+corolla altis,2016,14.73,14.89,23000,Diesel,Dealer,Manual,0,Hyderabad,Hyderabad,corolla altis,66,22,59,65
+etios gd,2015,4.75,7.85,40000,Diesel,Dealer,Manual,0,Jaipur,Chennai,etios gd,54,53,58,75
+innova,2017,23.0,25.39,15000,Diesel,Dealer,Automatic,0,Chennai,Ahmedabad,innova,34,141,29,18
+innova,2015,12.5,13.46,38000,Diesel,Dealer,Manual,0,Chennai,Lucknow,innova,47,29,41,88
+innova,2005,3.49,13.46,197176,Diesel,Dealer,Manual,0,Bangalore,Delhi,innova,35,126,25,79
+camry,2006,2.5,23.73,142000,Petrol,Individual,Automatic,3,Mumbai,Chennai,camry,72,59,73,14
+land cruiser,2010,35.0,92.6,78000,Diesel,Dealer,Manual,0,Ahmedabad,Mumbai,land cruiser,78,57,72,84
+corolla altis,2012,5.9,13.74,56000,Petrol,Dealer,Manual,0,Lucknow,Lucknow,corolla altis,30,104,31,74
+etios liva,2013,3.45,6.05,47000,Petrol,Dealer,Manual,0,Kolkata,Delhi,etios liva,60,144,54,35
+etios g,2014,4.75,6.76,40000,Petrol,Dealer,Manual,0,Mumbai,Delhi,etios g,77,144,75,19
+corolla altis,2009,3.8,18.61,62000,Petrol,Dealer,Manual,0,Bangalore,Mumbai,corolla altis,70,117,75,18
+innova,2014,11.25,16.09,58242,Diesel,Dealer,Manual,0,Hyderabad,Delhi,innova,35,133,27,20
+innova,2005,3.51,13.7,75000,Petrol,Dealer,Manual,0,Ahmedabad,Jaipur,innova,66,106,70,19
+fortuner,2015,23.0,30.61,40000,Diesel,Dealer,Automatic,0,Pune,Kolkata,fortuner,38,36,46,47
+corolla altis,2008,4.0,22.78,89000,Petrol,Dealer,Automatic,0,Bangalore,Chennai,corolla altis,76,34,77,19
+corolla altis,2012,5.85,18.61,72000,Petrol,Dealer,Manual,0,Chennai,Delhi,corolla altis,75,20,69,56
+innova,2016,20.75,25.39,29000,Diesel,Dealer,Automatic,0,Delhi,Mumbai,innova,58,20,48,25
+corolla altis,2017,17.0,18.64,8700,Petrol,Dealer,Manual,0,Pune,Pune,corolla altis,40,72,46,51
+corolla altis,2013,7.05,18.61,45000,Petrol,Dealer,Manual,0,Hyderabad,Jaipur,corolla altis,40,92,35,45
+fortuner,2010,9.65,20.45,50024,Diesel,Dealer,Manual,0,Hyderabad,Delhi,fortuner,57,127,48,31
+Royal Enfield Thunder 500,2016,1.75,1.9,3000,Petrol,Individual,Manual,0,Jaipur,Kolkata,royal enfield,75,80,76,23
+UM Renegade Mojave,2017,1.7,1.82,1400,Petrol,Individual,Manual,0,Lucknow,Pune,um renegade,58,52,58,27
+KTM RC200,2017,1.65,1.78,4000,Petrol,Individual,Manual,0,Ahmedabad,Delhi,ktm rc200,58,43,56,74
+Bajaj Dominar 400,2017,1.45,1.6,1200,Petrol,Individual,Manual,0,Jaipur,Pune,bajaj dominar,72,66,78,32
+Royal Enfield Classic 350,2017,1.35,1.47,4100,Petrol,Individual,Manual,0,Jaipur,Hyderabad,royal enfield,33,93,26,11
+KTM RC390,2015,1.35,2.37,21700,Petrol,Individual,Manual,0,Delhi,Delhi,ktm rc390,45,119,49,34
+Hyosung GT250R,2014,1.35,3.45,16500,Petrol,Individual,Manual,1,Kolkata,Ahmedabad,hyosung gt250r,83,115,77,35
+Royal Enfield Thunder 350,2013,1.25,1.5,15000,Petrol,Individual,Manual,0,Chennai,Jaipur,royal enfield,86,110,82,61
+Royal Enfield Thunder 350,2016,1.2,1.5,18000,Petrol,Individual,Manual,0,Hyderabad,Bangalore,royal enfield,58,107,61,38
+Royal Enfield Classic 350,2017,1.2,1.47,11000,Petrol,Individual,Manual,0,Ahmedabad,Pune,royal enfield,95,114,88,14
+KTM RC200,2016,1.2,1.78,6000,Petrol,Individual,Manual,0,Chennai,Delhi,ktm rc200,58,84,52,50
+Royal Enfield Thunder 350,2016,1.15,1.5,8700,Petrol,Individual,Manual,0,Jaipur,Ahmedabad,royal enfield,83,147,83,62
+KTM 390 Duke ,2014,1.15,2.4,7000,Petrol,Individual,Manual,0,Pune,Kolkata,ktm 390,55,31,51,79
+Mahindra Mojo XT300,2016,1.15,1.4,35000,Petrol,Individual,Manual,0,Hyderabad,Ahmedabad,mahindra mojo,41,36,39,15
+Royal Enfield Classic 350,2015,1.15,1.47,17000,Petrol,Individual,Manual,0,Bangalore,Kolkata,royal enfield,75,115,74,12
+Royal Enfield Classic 350,2015,1.11,1.47,17500,Petrol,Individual,Manual,0,Mumbai,Chennai,royal enfield,42,83,38,52
+Royal Enfield Classic 350,2013,1.1,1.47,33000,Petrol,Individual,Manual,0,Hyderabad,Jaipur,royal enfield,86,107,89,68
+Royal Enfield Thunder 500,2015,1.1,1.9,14000,Petrol,Individual,Manual,0,Chennai,Hyderabad,royal enfield,33,65,36,37
+Royal Enfield Classic 350,2015,1.1,1.47,26000,Petrol,Individual,Manual,0,Lucknow,Hyderabad,royal enfield,33,123,25,15
+Royal Enfield Thunder 500,2013,1.05,1.9,5400,Petrol,Individual,Manual,0,Mumbai,Ahmedabad,royal enfield,83,28,88,16
+Bajaj Pulsar RS200,2016,1.05,1.26,5700,Petrol,Individual,Manual,0,Chennai,Mumbai,bajaj pulsar,38,60,28,22
+Royal Enfield Thunder 350,2011,1.05,1.5,6900,Petrol,Individual,Manual,0,Ahmedabad,Jaipur,royal enfield,86,106,76,63
+Royal Enfield Bullet 350,2016,1.05,1.17,6000,Petrol,Individual,Manual,0,Ahmedabad,Ahmedabad,royal enfield,83,85,76,67
+Royal Enfield Classic 350,2013,1.0,1.47,46500,Petrol,Individual,Manual,0,Delhi,Ahmedabad,royal enfield,83,21,88,17
+Royal Enfield Classic 500,2012,0.95,1.75,11500,Petrol,Individual,Manual,0,Kolkata,Mumbai,royal enfield,40,134,40,29
+Royal Enfield Classic 500,2009,0.9,1.75,40000,Petrol,Individual,Manual,0,Ahmedabad,Delhi,royal enfield,84,90,87,86
+Bajaj Avenger 220,2017,0.9,0.95,1300,Petrol,Individual,Manual,0,Bangalore,Mumbai,bajaj avenger,46,139,44,59
+Bajaj Avenger 150,2016,0.75,0.8,7000,Petrol,Individual,Manual,0,Bangalore,Ahmedabad,bajaj avenger,50,70,40,85
+Honda CB Hornet 160R,2017,0.8,0.87,3000,Petrol,Individual,Manual,0,Mumbai,Kolkata,honda cb,53,89,45,35
+Yamaha FZ S V 2.0,2017,0.78,0.84,5000,Petrol,Individual,Manual,0,Mumbai,Jaipur,yamaha fz,38,118,35,38
+Honda CB Hornet 160R,2017,0.75,0.87,11000,Petrol,Individual,Manual,0,Chennai,Lucknow,honda cb,45,22,50,50
+Yamaha FZ 16,2015,0.75,0.82,18000,Petrol,Individual,Manual,0,Bangalore,Jaipur,yamaha fz,38,67,44,81
+Bajaj Avenger 220,2017,0.75,0.95,3500,Petrol,Individual,Manual,0,Hyderabad,Mumbai,bajaj avenger,46,83,38,61
+Bajaj Avenger 220,2016,0.72,0.95,500,Petrol,Individual,Manual,0,Delhi,Hyderabad,bajaj avenger,65,53,73,35
+TVS Apache RTR 160,2017,0.65,0.81,11800,Petrol,Individual,Manual,0,Pune,Ahmedabad,tvs apache,78,20,75,69
+Bajaj Pulsar 150,2015,0.65,0.74,5000,Petrol,Individual,Manual,0,Delhi,Pune,bajaj pulsar,90,91,89,74
+Honda CBR 150,2014,0.65,1.2,23500,Petrol,Individual,Manual,0,Delhi,Jaipur,honda cbr,44,59,40,88
+Hero Extreme,2013,0.65,0.787,16000,Petrol,Individual,Manual,0,Lucknow,Kolkata,hero extreme,44,91,51,27
+Honda CB Hornet 160R,2016,0.6,0.87,15000,Petrol,Individual,Manual,0,Pune,Jaipur,honda cb,71,22,71,78
+Bajaj Avenger 220 dtsi,2015,0.6,0.95,16600,Petrol,Individual,Manual,0,Ahmedabad,Jaipur,bajaj avenger,87,107,89,72
+Honda CBR 150,2013,0.6,1.2,32000,Petrol,Individual,Manual,0,Jaipur,Jaipur,honda cbr,44,45,39,49
+Bajaj Avenger 150 street,2016,0.6,0.8,20000,Petrol,Individual,Manual,0,Hyderabad,Mumbai,bajaj avenger,46,77,51,15
+Yamaha FZ  v 2.0,2015,0.6,0.84,29000,Petrol,Individual,Manual,0,Jaipur,Bangalore,yamaha fz,42,139,45,80
+Yamaha FZ  v 2.0,2016,0.6,0.84,25000,Petrol,Individual,Manual,0,Jaipur,Lucknow,yamaha fz,83,66,91,58
+Bajaj Pulsar  NS 200,2014,0.6,0.99,25000,Petrol,Individual,Manual,0,Hyderabad,Lucknow,bajaj pulsar,58,115,62,29
+TVS Apache RTR 160,2012,0.6,0.81,19000,Petrol,Individual,Manual,0,Delhi,Bangalore,tvs apache,42,91,39,54
+Hero Extreme,2014,0.55,0.787,15000,Petrol,Individual,Manual,0,Ahmedabad,Pune,hero extreme,88,100,86,21
+Yamaha FZ S V 2.0,2015,0.55,0.84,58000,Petrol,Individual,Manual,0,Lucknow,Kolkata,yamaha fz,52,105,46,48
+Bajaj Pulsar 220 F,2010,0.52,0.94,45000,Petrol,Individual,Manual,0,Ahmedabad,Delhi,bajaj pulsar,66,48,63,45
+Bajaj Pulsar 220 F,2016,0.51,0.94,24000,Petrol,Individual,Manual,0,Mumbai,Lucknow,bajaj pulsar,58,141,62,66
+TVS Apache RTR 180,2011,0.5,0.826,6000,Petrol,Individual,Manual,0,Kolkata,Hyderabad,tvs apache,41,113,37,51
+Hero Passion X pro,2016,0.5,0.55,31000,Petrol,Individual,Manual,0,Lucknow,Lucknow,hero passion,49,86,53,34
+Bajaj Pulsar NS 200,2012,0.5,0.99,13000,Petrol,Individual,Manual,0,Lucknow,Lucknow,bajaj pulsar,58,45,51,32
+Bajaj Pulsar NS 200,2013,0.5,0.99,45000,Petrol,Individual,Manual,0,Pune,Kolkata,bajaj pulsar,47,59,47,43
+Yamaha Fazer ,2014,0.5,0.88,8000,Petrol,Individual,Manual,0,Delhi,Jaipur,yamaha fazer,70,47,68,36
+Honda Activa 4G,2017,0.48,0.51,4300,Petrol,Individual,Automatic,0,Lucknow,Mumbai,honda activa,34,48,26,50
+TVS Sport ,2017,0.48,0.52,15000,Petrol,Individual,Manual,0,Ahmedabad,Chennai,tvs sport,94,122,103,22
+Yamaha FZ S V 2.0,2015,0.48,0.84,23000,Petrol,Individual,Manual,0,Kolkata,Lucknow,yamaha fz,83,71,84,81
+Honda Dream Yuga ,2017,0.48,0.54,8600,Petrol,Individual,Manual,0,Mumbai,Lucknow,honda dream,87,64,81,70
+Honda Activa 4G,2017,0.45,0.51,4000,Petrol,Individual,Automatic,0,Jaipur,Ahmedabad,honda activa,80,95,86,72
+Bajaj Avenger Street 220,2011,0.45,0.95,24000,Petrol,Individual,Manual,0,Mumbai,Ahmedabad,bajaj avenger,50,102,55,18
+TVS Apache RTR 180,2014,0.45,0.826,23000,Petrol,Individual,Manual,0,Lucknow,Kolkata,tvs apache,72,91,66,56
+Bajaj Pulsar NS 200,2012,0.45,0.99,14500,Petrol,Individual,Manual,0,Chennai,Ahmedabad,bajaj pulsar,89,38,92,35
+Bajaj Avenger 220 dtsi,2010,0.45,0.95,27000,Petrol,Individual,Manual,0,Delhi,Delhi,bajaj avenger,57,114,57,33
+Hero Splender iSmart,2016,0.45,0.54,14000,Petrol,Individual,Manual,0,Hyderabad,Bangalore,hero splender,50,95,55,43
+Activa 3g,2016,0.45,0.54,500,Petrol,Individual,Automatic,0,Mumbai,Mumbai,activa 3g,63,126,63,67
+Hero Passion Pro,2016,0.45,0.55,1000,Petrol,Individual,Manual,0,Chennai,Bangalore,hero passion,90,146,96,21
+TVS Apache RTR 160,2014,0.42,0.81,42000,Petrol,Individual,Manual,0,Delhi,Delhi,tvs apache,53,61,46,89
+Honda CB Trigger,2013,0.42,0.73,12000,Petrol,Individual,Manual,0,Pune,Mumbai,honda cb,94,89,87,81
+Hero Splender iSmart,2015,0.4,0.54,14000,Petrol,Individual,Manual,0,Lucknow,Bangalore,hero splender,50,107,54,40
+Yamaha FZ S ,2012,0.4,0.83,5500,Petrol,Individual,Manual,0,Jaipur,Delhi,yamaha fz,92,101,97,79
+Hero Passion Pro,2015,0.4,0.55,6700,Petrol,Individual,Manual,0,Hyderabad,Jaipur,hero passion,41,127,46,34
+Bajaj Pulsar 135 LS,2014,0.4,0.64,13700,Petrol,Individual,Manual,0,Kolkata,Jaipur,bajaj pulsar,38,42,36,83
+Activa 4g,2017,0.4,0.51,1300,Petrol,Individual,Automatic,0,Jaipur,Bangalore,activa 4g,56,136,54,35
+Honda CB Unicorn,2015,0.38,0.72,38600,Petrol,Individual,Manual,0,Ahmedabad,Jaipur,honda cb,71,69,61,84
+Hero Honda CBZ extreme,2011,0.38,0.787,75000,Petrol,Individual,Manual,0,Mumbai,Mumbai,hero honda,51,39,48,30
+Honda Karizma,2011,0.35,1.05,30000,Petrol,Individual,Manual,0,Lucknow,Delhi,honda karizma,35,132,27,36
+Honda Activa 125,2016,0.35,0.57,24000,Petrol,Individual,Automatic,0,Hyderabad,Ahmedabad,honda activa,80,22,87,11
+TVS Jupyter,2014,0.35,0.52,19000,Petrol,Individual,Automatic,0,Pune,Bangalore,tvs jupyter,72,88,70,23
+Honda Karizma,2010,0.31,1.05,213000,Petrol,Individual,Manual,0,Jaipur,Ahmedabad,honda karizma,67,92,58,14
+Hero Honda Passion Pro,2012,0.3,0.51,60000,Petrol,Individual,Manual,0,Chennai,Mumbai,hero honda,51,55,59,89
+Hero Splender Plus,2016,0.3,0.48,50000,Petrol,Individual,Manual,0,Lucknow,Pune,hero splender,65,143,71,79
+Honda CB Shine,2013,0.3,0.58,30000,Petrol,Individual,Manual,0,Mumbai,Mumbai,honda cb,94,149,85,78
+Bajaj Discover 100,2013,0.27,0.47,21000,Petrol,Individual,Manual,0,Lucknow,Mumbai,bajaj discover,86,20,83,57
+Bajaj Pulsar 150,2008,0.25,0.75,26000,Petrol,Individual,Manual,1,Chennai,Pune,bajaj pulsar,90,34,82,11
+Suzuki Access 125,2008,0.25,0.58,1900,Petrol,Individual,Automatic,0,Delhi,Ahmedabad,suzuki access,31,48,33,35
+TVS Wego,2010,0.25,0.52,22000,Petrol,Individual,Automatic,0,Chennai,Jaipur,tvs wego,82,42,87,16
+Honda CB twister,2013,0.25,0.51,32000,Petrol,Individual,Manual,0,Ahmedabad,Mumbai,honda cb,94,106,91,74
+Hero Glamour,2013,0.25,0.57,18000,Petrol,Individual,Manual,0,Bangalore,Bangalore,hero glamour,78,130,81,57
+Hero Super Splendor,2005,0.2,0.57,55000,Petrol,Individual,Manual,0,Mumbai,Bangalore,hero super,88,50,96,79
+Bajaj Pulsar 150,2008,0.2,0.75,60000,Petrol,Individual,Manual,0,Bangalore,Mumbai,bajaj pulsar,38,52,36,72
+Bajaj Discover 125,2012,0.2,0.57,25000,Petrol,Individual,Manual,1,Chennai,Kolkata,bajaj discover,91,29,85,24
+Hero Hunk,2007,0.2,0.75,49000,Petrol,Individual,Manual,1,Kolkata,Chennai,hero hunk,65,102,70,78
+Hero  Ignitor Disc,2013,0.2,0.65,24000,Petrol,Individual,Manual,1,Delhi,Bangalore,hero  ignitor,33,129,23,71
+Hero  CBZ Xtreme,2008,0.2,0.787,50000,Petrol,Individual,Manual,0,Lucknow,Chennai,hero  cbz,50,89,43,10
+Bajaj  ct 100,2015,0.18,0.32,35000,Petrol,Individual,Manual,0,Pune,Kolkata,bajaj  ct,41,143,43,73
+Activa 3g,2008,0.17,0.52,500000,Petrol,Individual,Automatic,0,Pune,Hyderabad,activa 3g,52,67,47,17
+Honda CB twister,2010,0.16,0.51,33000,Petrol,Individual,Manual,0,Jaipur,Ahmedabad,honda cb,73,99,78,42
+Bajaj Discover 125,2011,0.15,0.57,35000,Petrol,Individual,Manual,1,Jaipur,Hyderabad,bajaj discover,34,105,25,57
+Honda CB Shine,2007,0.12,0.58,53000,Petrol,Individual,Manual,0,Hyderabad,Delhi,honda cb,78,21,79,11
+Bajaj Pulsar 150,2006,0.1,0.75,92233,Petrol,Individual,Manual,0,Ahmedabad,Chennai,bajaj pulsar,46,31,54,43
+i20,2010,3.25,6.79,58000,Diesel,Dealer,Manual,1,Chennai,Lucknow,i20,30,26,36,67
+grand i10,2015,4.4,5.7,28200,Petrol,Dealer,Manual,0,Delhi,Kolkata,grand i10,36,83,34,67
+i10,2011,2.95,4.6,53460,Petrol,Dealer,Manual,0,Bangalore,Pune,i10,59,58,51,57
+eon,2015,2.75,4.43,28282,Petrol,Dealer,Manual,0,Mumbai,Chennai,eon,56,54,64,44
+grand i10,2016,5.25,5.7,3493,Petrol,Dealer,Manual,1,Hyderabad,Chennai,grand i10,58,96,49,36
+xcent,2017,5.75,7.13,12479,Petrol,Dealer,Manual,0,Kolkata,Bangalore,xcent,58,24,53,45
+grand i10,2015,5.15,5.7,34797,Petrol,Dealer,Automatic,0,Chennai,Mumbai,grand i10,30,84,26,21
+i20,2017,7.9,8.1,3435,Petrol,Dealer,Manual,0,Mumbai,Bangalore,i20,51,88,41,37
+grand i10,2015,4.85,5.7,21125,Diesel,Dealer,Manual,0,Kolkata,Kolkata,grand i10,36,70,42,33
+i10,2012,3.1,4.6,35775,Petrol,Dealer,Manual,0,Delhi,Kolkata,i10,60,35,68,34
+elantra,2015,11.75,14.79,43535,Diesel,Dealer,Manual,0,Chennai,Bangalore,elantra,84,112,83,29
+creta,2016,11.25,13.6,22671,Petrol,Dealer,Manual,0,Chennai,Pune,creta,90,107,90,74
+i20,2011,2.9,6.79,31604,Petrol,Dealer,Manual,0,Ahmedabad,Bangalore,i20,51,29,56,89
+grand i10,2017,5.25,5.7,20114,Petrol,Dealer,Manual,0,Jaipur,Hyderabad,grand i10,58,140,52,11
+verna,2012,4.5,9.4,36100,Petrol,Dealer,Manual,0,Pune,Mumbai,verna,45,30,54,18
+eon,2016,2.9,4.43,12500,Petrol,Dealer,Manual,0,Pune,Delhi,eon,53,65,47,11
+eon,2016,3.15,4.43,15000,Petrol,Dealer,Manual,0,Mumbai,Ahmedabad,eon,35,111,38,37
+verna,2014,6.45,9.4,45078,Petrol,Dealer,Manual,0,Kolkata,Ahmedabad,verna,80,23,72,70
+verna,2012,4.5,9.4,36000,Petrol,Dealer,Manual,0,Lucknow,Lucknow,verna,45,108,42,64
+eon,2017,3.5,4.43,38488,Petrol,Dealer,Manual,0,Delhi,Chennai,eon,56,30,62,41
+i20,2013,4.5,6.79,32000,Petrol,Dealer,Automatic,0,Delhi,Pune,i20,69,81,61,56
+i20,2014,6.0,7.6,77632,Diesel,Dealer,Manual,0,Kolkata,Ahmedabad,i20,30,24,35,23
+verna,2015,8.25,9.4,61381,Diesel,Dealer,Manual,0,Kolkata,Bangalore,verna,87,44,88,69
+verna,2013,5.11,9.4,36198,Petrol,Dealer,Automatic,0,Mumbai,Jaipur,verna,71,84,78,50
+i10,2011,2.7,4.6,22517,Petrol,Dealer,Manual,0,Mumbai,Kolkata,i10,60,127,58,66
+grand i10,2015,5.25,5.7,24678,Petrol,Dealer,Manual,0,Jaipur,Bangalore,grand i10,72,43,71,64
+i10,2011,2.55,4.43,57000,Petrol,Dealer,Manual,0,Delhi,Mumbai,i10,45,127,49,68
+verna,2012,4.95,9.4,60000,Diesel,Dealer,Manual,0,Hyderabad,Delhi,verna,80,24,82,60
+i20,2012,3.1,6.79,52132,Diesel,Dealer,Manual,0,Ahmedabad,Delhi,i20,87,110,91,52
+verna,2013,6.15,9.4,45000,Diesel,Dealer,Manual,0,Ahmedabad,Kolkata,verna,87,129,85,35
+verna,2017,9.25,9.4,15001,Petrol,Dealer,Manual,0,Lucknow,Kolkata,verna,87,26,86,86
+elantra,2015,11.45,14.79,12900,Petrol,Dealer,Automatic,0,Hyderabad,Ahmedabad,elantra,49,113,47,25
+grand i10,2013,3.9,5.7,53000,Diesel,Dealer,Manual,0,Kolkata,Hyderabad,grand i10,58,78,63,71
+grand i10,2015,5.5,5.7,4492,Petrol,Dealer,Manual,0,Ahmedabad,Chennai,grand i10,58,105,58,82
+verna,2017,9.1,9.4,15141,Petrol,Dealer,Manual,0,Pune,Hyderabad,verna,88,137,94,46
+eon,2016,3.1,4.43,11849,Petrol,Dealer,Manual,0,Chennai,Lucknow,eon,84,106,83,74
+creta,2015,11.25,13.6,68000,Diesel,Dealer,Manual,0,Bangalore,Mumbai,creta,80,131,80,56
+verna,2013,4.8,9.4,60241,Petrol,Dealer,Manual,0,Lucknow,Ahmedabad,verna,80,58,84,22
+eon,2012,2.0,4.43,23709,Petrol,Dealer,Manual,0,Delhi,Chennai,eon,56,73,56,82
+verna,2012,5.35,9.4,32322,Diesel,Dealer,Manual,0,Ahmedabad,Ahmedabad,verna,80,77,83,50
+xcent,2015,4.75,7.13,35866,Petrol,Dealer,Manual,1,Chennai,Bangalore,xcent,58,137,49,80
+xcent,2014,4.4,7.13,34000,Petrol,Dealer,Manual,0,Ahmedabad,Mumbai,xcent,44,148,38,63
+i20,2016,6.25,7.6,7000,Petrol,Dealer,Manual,0,Bangalore,Kolkata,i20,31,141,30,73
+verna,2013,5.95,9.4,49000,Diesel,Dealer,Manual,0,Jaipur,Jaipur,verna,71,71,73,36
+verna,2012,5.2,9.4,71000,Diesel,Dealer,Manual,0,Delhi,Chennai,verna,53,109,52,26
+i20,2012,3.75,6.79,35000,Petrol,Dealer,Manual,0,Bangalore,Lucknow,i20,30,144,37,12
+verna,2015,5.95,9.4,36000,Petrol,Dealer,Manual,0,Jaipur,Delhi,verna,80,77,84,74
+i10,2013,4.0,4.6,30000,Petrol,Dealer,Manual,0,Pune,Chennai,i10,83,32,83,55
+i20,2016,5.25,7.6,17000,Petrol,Dealer,Manual,0,Delhi,Pune,i20,69,47,63,80
+creta,2016,12.9,13.6,35934,Diesel,Dealer,Manual,0,Hyderabad,Pune,creta,90,122,97,34
+city,2013,5.0,9.9,56701,Petrol,Dealer,Manual,0,Kolkata,Chennai,city,30,47,22,73
+brio,2015,5.4,6.82,31427,Petrol,Dealer,Automatic,0,Bangalore,Kolkata,brio,52,105,51,18
+city,2014,7.2,9.9,48000,Diesel,Dealer,Manual,0,Bangalore,Mumbai,city,48,29,55,89
+city,2013,5.25,9.9,54242,Petrol,Dealer,Manual,0,Lucknow,Bangalore,city,49,118,52,54
+brio,2012,3.0,5.35,53675,Petrol,Dealer,Manual,0,Jaipur,Bangalore,brio,65,30,65,10
+city,2016,10.25,13.6,49562,Petrol,Dealer,Manual,0,Jaipur,Lucknow,city,86,93,84,72
+city,2015,8.5,13.6,40324,Petrol,Dealer,Manual,0,Delhi,Delhi,city,65,108,63,72
+city,2015,8.4,13.6,25000,Petrol,Dealer,Manual,0,Hyderabad,Jaipur,city,75,98,82,64
+amaze,2014,3.9,7.0,36054,Petrol,Dealer,Manual,0,Ahmedabad,Ahmedabad,amaze,85,101,81,13
+city,2016,9.15,13.6,29223,Petrol,Dealer,Manual,0,Lucknow,Ahmedabad,city,31,142,34,52
+brio,2016,5.5,5.97,5600,Petrol,Dealer,Manual,0,Bangalore,Hyderabad,brio,51,83,44,57
+amaze,2015,4.0,5.8,40023,Petrol,Dealer,Manual,0,Lucknow,Lucknow,amaze,51,116,56,30
+jazz,2016,6.6,7.7,16002,Petrol,Dealer,Manual,0,Lucknow,Kolkata,jazz,89,96,92,16
+amaze,2015,4.0,7.0,40026,Petrol,Dealer,Manual,0,Jaipur,Chennai,amaze,47,75,43,34
+jazz,2017,6.5,8.7,21200,Petrol,Dealer,Manual,0,Ahmedabad,Jaipur,jazz,92,112,99,56
+amaze,2014,3.65,7.0,35000,Petrol,Dealer,Manual,0,Ahmedabad,Delhi,amaze,59,54,62,28
+city,2016,8.35,9.4,19434,Diesel,Dealer,Manual,0,Lucknow,Chennai,city,30,99,27,83
+brio,2017,4.8,5.8,19000,Petrol,Dealer,Manual,0,Lucknow,Chennai,brio,44,30,47,44
+city,2015,6.7,10.0,18828,Petrol,Dealer,Manual,0,Bangalore,Bangalore,city,49,52,41,37
+city,2011,4.1,10.0,69341,Petrol,Dealer,Manual,0,Kolkata,Delhi,city,65,82,57,26
+city,2009,3.0,10.0,69562,Petrol,Dealer,Manual,0,Chennai,Chennai,city,30,122,20,35
+city,2015,7.5,10.0,27600,Petrol,Dealer,Manual,0,Lucknow,Bangalore,city,49,72,47,18
+jazz,2010,2.25,7.5,61203,Petrol,Dealer,Manual,0,Bangalore,Delhi,jazz,78,126,83,54
+brio,2014,5.3,6.8,16500,Petrol,Dealer,Manual,0,Delhi,Mumbai,brio,69,35,66,53
+city,2016,10.9,13.6,30753,Petrol,Dealer,Automatic,0,Jaipur,Pune,city,89,118,98,31
+city,2015,8.65,13.6,24800,Petrol,Dealer,Manual,0,Hyderabad,Kolkata,city,73,35,77,65
+city,2015,9.7,13.6,21780,Petrol,Dealer,Manual,0,Bangalore,Jaipur,city,75,52,84,50
+jazz,2016,6.0,8.4,4000,Petrol,Dealer,Manual,0,Kolkata,Chennai,jazz,51,111,49,81
+city,2014,6.25,13.6,40126,Petrol,Dealer,Manual,0,Chennai,Mumbai,city,48,74,47,47
+brio,2015,5.25,5.9,14465,Petrol,Dealer,Manual,0,Mumbai,Jaipur,brio,70,131,70,74
+city,2006,2.1,7.6,50456,Petrol,Dealer,Manual,0,Jaipur,Jaipur,city,75,144,70,40
+city,2014,8.25,14.0,63000,Diesel,Dealer,Manual,0,Mumbai,Delhi,city,65,67,70,10
+city,2016,8.99,11.8,9010,Petrol,Dealer,Manual,0,Bangalore,Pune,city,89,134,80,82
+brio,2013,3.5,5.9,9800,Petrol,Dealer,Manual,0,Chennai,Delhi,brio,86,134,84,62
+jazz,2016,7.4,8.5,15059,Petrol,Dealer,Automatic,0,Mumbai,Mumbai,jazz,94,148,84,13
+jazz,2016,5.65,7.9,28569,Petrol,Dealer,Manual,0,Jaipur,Kolkata,jazz,89,41,79,60
+amaze,2015,5.75,7.5,44000,Petrol,Dealer,Automatic,0,Chennai,Ahmedabad,amaze,85,52,86,28
+city,2015,8.4,13.6,34000,Petrol,Dealer,Manual,0,Delhi,Pune,city,89,89,83,33
+city,2016,10.11,13.6,10980,Petrol,Dealer,Manual,0,Kolkata,Jaipur,city,75,80,78,80
+amaze,2014,4.5,6.4,19000,Petrol,Dealer,Manual,0,Jaipur,Delhi,amaze,59,133,57,83
+brio,2015,5.4,6.1,31427,Petrol,Dealer,Manual,0,Hyderabad,Bangalore,brio,65,89,56,43
+jazz,2016,6.4,8.4,12000,Petrol,Dealer,Manual,0,Chennai,Mumbai,jazz,94,64,84,86
+city,2010,3.25,9.9,38000,Petrol,Dealer,Manual,0,Hyderabad,Ahmedabad,city,31,96,32,80
+amaze,2014,3.75,6.8,33019,Petrol,Dealer,Manual,0,Kolkata,Chennai,amaze,47,21,52,70
+city,2015,8.55,13.09,60076,Diesel,Dealer,Manual,0,Delhi,Hyderabad,city,42,58,49,68
+city,2016,9.5,11.6,33988,Diesel,Dealer,Manual,0,Jaipur,Hyderabad,city,42,66,44,87
+brio,2015,4.0,5.9,60000,Petrol,Dealer,Manual,0,Kolkata,Mumbai,brio,69,119,63,12
+city,2009,3.35,11.0,87934,Petrol,Dealer,Manual,0,Bangalore,Delhi,city,65,78,62,75
+city,2017,11.5,12.5,9000,Diesel,Dealer,Manual,0,Lucknow,Mumbai,city,48,141,55,21
+brio,2016,5.3,5.9,5464,Petrol,Dealer,Manual,0,Mumbai,Kolkata,brio,52,100,42,11
