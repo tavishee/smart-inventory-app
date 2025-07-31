@@ -59,8 +59,16 @@ for city in unique_cities:
     if isinstance(score, int):
         trend_data.append({"City": city, "TrendScore": score})
 
-trend_df = pd.DataFrame(trend_data).sort_values("TrendScore", ascending=False)
-st.dataframe(trend_df.head(10))
+trend_df = pd.DataFrame(trend_data)
+
+st.subheader("📈 Real-time Google Trends Demand Score")
+
+if not trend_df.empty and "TrendScore" in trend_df.columns:
+    trend_df = trend_df.sort_values("TrendScore", ascending=False)
+    st.dataframe(trend_df.head(10))
+else:
+    st.info("🔍 No Google Trends data available to display.")
+
 
 # -----------------------
 # FUEL PRICE WIDGET
