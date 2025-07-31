@@ -114,7 +114,12 @@ for _, source in surplus_cities.iterrows():
 
 reloc_df = pd.DataFrame(relocation_suggestions)
 st.markdown("**Top 10 Profitable Relocation Moves**")
-st.dataframe(reloc_df.sort_values("expected_profit", ascending=False).head(10))
+
+if not reloc_df.empty and "expected_profit" in reloc_df.columns:
+    st.dataframe(reloc_df.sort_values("expected_profit", ascending=False).head(10))
+else:
+    st.info("🚚 No profitable relocation suggestions available right now.")
+
 
 # -----------------------
 # PURCHASE SUGGESTIONS
