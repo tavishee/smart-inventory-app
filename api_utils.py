@@ -1,44 +1,48 @@
-import googlemaps
-from pytrends.request import TrendReq
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# 1. Google Maps Distance
-def get_distance_km(origin, destination):
-    try:
-        gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
-        result = gmaps.distance_matrix(origins=[origin], destinations=[destination], units="metric")
-        distance = result["rows"][0]["elements"][0]["distance"]["value"] / 1000  # in km
-        return round(distance, 2)
-    except Exception as e:
-        print(f"[Google Maps Error] {e}")
-        return None
-
 from pytrends.request import TrendReq
 import pandas as pd
+import time
 
-def get_trend_score(keyword):
-    try:
-        pytrends = TrendReq(hl='en-US', tz=330)
-        pytrends.build_payload([keyword], cat=0, timeframe='now 7-d', geo='IN')
-        data = pytrends.interest_by_region(resolution='REGION', inc_low_vol=True)
-        top_regions = data.sort_values(by=keyword, ascending=False).reset_index()
-        return top_regions
-    except Exception as e:
-        print(f"[Trend error] {e}")
+# ✅ Hardcoded, reliable keywords for demand scoring
+ALL_TREND_KEYWORDS = [
+    "used car", "second hand car", "pre owned car", "cheap car", "car under 5 lakhs",
+    "buy car", "car EMI", "used car loan", "certified used car", "car resale value",
+    "Maruti", "Maruti Swift", "Maruti Alto", "Maruti Baleno", "Wagon R", "Ertiga",
+    "Hyundai", "Hyundai i20", "Hyundai Creta", "Venue", "Santro",
+    "Tata", "Tata Nexon", "Tata Tiago", "Tata Punch",
+    "Honda", "Honda City", "Amaze",
+    "Toyota", "Toyota Innova", "Toyota Fortuner", "Etios",
+    "Kia", "Kia Seltos", "Kia Sonet",
+    "Mahindra", "Mahindra XUV300", "Scorpio", "Bolero", "Thar",
+    "Renault", "Renault Kwid", "Triber",
+    "Volkswagen", "Skoda", "Ford EcoSport", "Nissan Magnite",
+    "SUV", "sedan", "hatchback", "7 seater car", "family car",
+    "compact SUV", "CNG car", "automatic car", "manual car",
+    "second hand car in Delhi", "second hand Swift", "used car Bangalore",
+    "best used car", "cheap Alto", "Maruti second hand", "car resale", "second hand SUV India"
+]
+
+# ✅ Function to pull average demand by region across all keywords
+def get_trend_score_all(keywords):
+    pytrends = TrendReq(hl='en-US', tz=330)
+    results = []
+
+    for keyword in keywords:
+        try:
+            pytrends.build_payload([keyword], cat=0, timeframe='now 7-d', geo='IN')
+            data = pytrends.interest_by_region(resolution='REGION', inc_low_vol=True)
+            data = data[[keyword]].reset_index()
+            data.columns = ["Region", "Score"]
+            data["Keyword"] = keyword
+            results.append(data)
+            time.sleep(1)  # prevent rate-limiting
+        except Exception as e:
+            print(f"[Trend fail for '{keyword}']: {e}")
+            continue
+
+    if not results:
         return pd.DataFrame()
 
-
-# 3. Fuel Price (simulated for now)
-def get_fuel_price(city):
-    fuel_prices = {
-        "Delhi": 96.7,
-        "Mumbai": 104.8,
-        "Bangalore": 101.1,
-        "Hyderabad": 100.4,
-        "Kolkata": 103.5,
-        "Chennai": 102.3
-    }
-    return fuel_prices.get(city, 95.0)
+    all_data = pd.concat(results)
+    grouped = all_data.groupby("Region")["Score"].mean().reset_index()
+    grouped.columns = ["Region", "AvgDemandScore"]
+    return grouped.sort_values("AvgDemandScore", ascending=False)
