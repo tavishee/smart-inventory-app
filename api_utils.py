@@ -16,18 +16,20 @@ def get_distance_km(origin, destination):
         print(f"[Google Maps Error] {e}")
         return None
 
-# 2. Google Trends Score
-def get_trend_score(keyword, city):
+from pytrends.request import TrendReq
+import pandas as pd
+
+def get_trend_score(keyword):
     try:
         pytrends = TrendReq(hl='en-US', tz=330)
         pytrends.build_payload([keyword], cat=0, timeframe='now 7-d', geo='IN')
-        data = pytrends.interest_by_region(resolution='CITY', inc_low_vol=True)
-        if city in data.index:
-            return int(data.loc[city][keyword])
-        return 0
+        data = pytrends.interest_by_region(resolution='REGION', inc_low_vol=True)
+        top_regions = data.sort_values(by=keyword, ascending=False).reset_index()
+        return top_regions
     except Exception as e:
-        print(f"[PyTrends Error] {e}")
-        return None
+        print(f"[Trend error] {e}")
+        return pd.DataFrame()
+
 
 # 3. Fuel Price (simulated for now)
 def get_fuel_price(city):
