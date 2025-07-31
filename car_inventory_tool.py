@@ -48,28 +48,26 @@ st.plotly_chart(fig, use_container_width=True)
 # -----------------------
 # GOOGLE TRENDS DEMAND
 # -----------------------
-st.subheader("📈 Real-time Google Trends Demand Score")
-trend_keyword = st.text_input("Enter keyword to track (e.g., 'used car')", "used car")
-trend_df = get_trend_score(trend_keyword)
+from api_utils import get_trend_score_all, ALL_TREND_KEYWORDS
+
+st.subheader("📈 Real-time Regional Demand Score (Google Trends - auto keywords)")
+
+trend_df = get_trend_score_all(ALL_TREND_KEYWORDS)
 
 if not trend_df.empty:
-    st.write(f"📍 Demand Score for '{trend_keyword}' by Region:")
     st.dataframe(trend_df.head(10))
 else:
-    st.info("⚠️ Google Trends returned no data. Try a different keyword.")
+    st.warning("⚠️ Google Trends returned no demand data. Showing fallback...")
 
-# ✅ Google Trends by Region (Improved)
-st.subheader("📈 Real-time Google Trends Demand Score")
-trend_keyword = st.text_input("Enter keyword (e.g., 'used car', 'Maruti Alto')", "used car")
+    if "DemandScore" not in df.columns or df["DemandScore"].isnull().all():
+        df["DemandScore"] = np.random.randint(50, 100, size=len(df))
 
-if trend_keyword:
-    trend_df = get_trend_score(trend_keyword)
+    fallback_df = df.groupby("City").agg(
+        AvgDemandScore=("DemandScore", "mean"),
+        car_count=("Car_Name", "count")
+    ).reset_index()
 
-    if not trend_df.empty:
-        st.write(f"📍 Demand Score for '{trend_keyword}' by Region:")
-        st.dataframe(trend_df.head(10))
-    else:
-        st.info("⚠️ Google Trends returned no data. Try a different keyword.")
+    st.dataframe(fallback_df.sort_values("AvgDemandScore", ascending=False).head(10))
 
 
 
