@@ -50,16 +50,13 @@ st.plotly_chart(fig, use_container_width=True)
 # -----------------------
 st.subheader("📈 Real-time Google Trends Demand Score")
 trend_keyword = st.text_input("Enter keyword to track (e.g., 'used car')", "used car")
-trend_data = []
+trend_df = get_trend_score(trend_keyword)
 
-unique_cities = df["City"].dropna().unique()
-
-for city in unique_cities:
-    score = get_trend_score(trend_keyword, city)
-    if isinstance(score, int):
-        trend_data.append({"City": city, "TrendScore": score})
-
-trend_df = pd.DataFrame(trend_data)
+if not trend_df.empty:
+    st.write(f"📍 Demand Score for '{trend_keyword}' by Region:")
+    st.dataframe(trend_df.head(10))
+else:
+    st.info("⚠️ Google Trends returned no data. Try a different keyword.")
 
 # ✅ Google Trends by Region (Improved)
 st.subheader("📈 Real-time Google Trends Demand Score")
