@@ -2,7 +2,6 @@ from pytrends.request import TrendReq
 import pandas as pd
 import time
 
-# ✅ Hardcoded, reliable keywords for demand scoring
 ALL_TREND_KEYWORDS = [
     "used car", "second hand car", "pre owned car", "cheap car", "car under 5 lakhs",
     "buy car", "car EMI", "used car loan", "certified used car", "car resale value",
@@ -21,7 +20,6 @@ ALL_TREND_KEYWORDS = [
     "best used car", "cheap Alto", "Maruti second hand", "car resale", "second hand SUV India"
 ]
 
-# ✅ Function to pull average demand by region across all keywords
 def get_trend_score_all(keywords):
     pytrends = TrendReq(hl='en-US', tz=330)
     results = []
@@ -34,7 +32,7 @@ def get_trend_score_all(keywords):
             data.columns = ["Region", "Score"]
             data["Keyword"] = keyword
             results.append(data)
-            time.sleep(1)  # prevent rate-limiting
+            time.sleep(1)
         except Exception as e:
             print(f"[Trend fail for '{keyword}']: {e}")
             continue
