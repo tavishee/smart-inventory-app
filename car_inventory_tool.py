@@ -77,6 +77,7 @@ if trend_keyword:
 # FUEL PRICE WIDGET
 # -----------------------
 st.sidebar.subheader("⛽ Fuel Cost Lookup")
+unique_cities = df["City"].dropna().unique()
 selected_city = st.sidebar.selectbox("Select city for fuel price", sorted(unique_cities))
 fuel_price = get_fuel_price(selected_city)
 st.sidebar.write(f"Fuel Price in {selected_city}: ₹{fuel_price} / L")
