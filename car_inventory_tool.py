@@ -5,7 +5,7 @@ import plotly.express as px
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-from api_utils import get_distance_km, get_trend_score, get_fuel_price
+from api_utils import get_distance_km, get_trend_score_all, get_fuel_price, ALL_TREND_KEYWORDS
 
 st.set_page_config(page_title="Car Inventory Optimization Tool", layout="wide")
 st.title("🚗 Smart Car Inventory Optimization Tool (with Real-time & ML Forecasting)")
