@@ -61,13 +61,19 @@ for city in unique_cities:
 
 trend_df = pd.DataFrame(trend_data)
 
+# ✅ Google Trends by Region (Improved)
 st.subheader("📈 Real-time Google Trends Demand Score")
+trend_keyword = st.text_input("Enter keyword (e.g., 'used car', 'Maruti Alto')", "used car")
 
-if not trend_df.empty and "TrendScore" in trend_df.columns:
-    trend_df = trend_df.sort_values("TrendScore", ascending=False)
-    st.dataframe(trend_df.head(10))
-else:
-    st.info("🔍 No Google Trends data available to display.")
+if trend_keyword:
+    trend_df = get_trend_score(trend_keyword)
+
+    if not trend_df.empty:
+        st.write(f"📍 Demand Score for '{trend_keyword}' by Region:")
+        st.dataframe(trend_df.head(10))
+    else:
+        st.info("⚠️ Google Trends returned no data. Try a different keyword.")
+
 
 
 # -----------------------
