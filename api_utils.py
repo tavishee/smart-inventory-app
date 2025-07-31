@@ -44,3 +44,10 @@ def get_trend_score_all(keywords):
     grouped = all_data.groupby("Region")["Score"].mean().reset_index()
     grouped.columns = ["Region", "AvgDemandScore"]
     return grouped.sort_values("AvgDemandScore", ascending=False)
+    # 🔧 Stub function to simulate Google Maps distance
+def get_distance_km(origin, destination):
+    return 100  # Simulated distance in km
+
+# 🔧 Stub function to simulate fuel price
+def get_fuel_price(city):
+    return 100.0  # Simulated ₹/litre
