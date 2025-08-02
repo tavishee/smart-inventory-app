@@ -81,57 +81,6 @@ fuel_price = get_fuel_price(selected_city)
 st.sidebar.write(f"Fuel Price in {selected_city}: ₹{fuel_price} / L")
 
 # -----------------------
-# INVENTORY RISK DASHBOARD
-# -----------------------
-st.subheader("⚠️ Inventory Risk Dashboard")
-if "days_in_inventory" not in df.columns:
-    df["days_in_inventory"] = np.random.randint(20, 150, size=len(df))
-
-st.dataframe(df[["City", "Car_Name", "days_in_inventory"]].sort_values("days_in_inventory", ascending=False))
-
-# -----------------------
-# SMART RELOCATION ENGINE
-# -----------------------
-st.subheader("🚚 Smart Relocation Profit Suggestions")
-demand_by_city = df.groupby("City")["DemandScore"].mean().reset_index(name="avg_demand")
-supply_by_city = df.groupby("City")["Car_Name"].count().reset_index(name="supply")
-
-combined = pd.merge(demand_by_city, supply_by_city, on="City")
-combined["demand_gap"] = combined["avg_demand"] - combined["supply"]
-
-surplus_cities = combined[combined["demand_gap"] < 0].copy()
-deficit_cities = combined[combined["demand_gap"] > 0].copy()
-
-relocation_suggestions = []
-for _, source in surplus_cities.iterrows():
-    for _, dest in deficit_cities.iterrows():
-        if source["City"] != dest["City"]:
-            distance_km = get_distance_km(source["City"], dest["City"])
-            if distance_km is None:
-                distance_km = np.random.randint(100, 2000)
-
-            profit_margin = (dest["avg_demand"] - source["avg_demand"]) * 100
-            transport_cost = distance_km * 5
-            expected_profit = profit_margin - transport_cost
-
-            if expected_profit > 0:
-                relocation_suggestions.append({
-                    "source_city": source["City"],
-                    "dest_city": dest["City"],
-                    "distance_km": round(distance_km, 2),
-                    "expected_profit": round(expected_profit, 2)
-                })
-
-reloc_df = pd.DataFrame(relocation_suggestions)
-st.markdown("**Top 10 Profitable Relocation Moves**")
-
-if not reloc_df.empty and "expected_profit" in reloc_df.columns:
-    st.dataframe(reloc_df.sort_values("expected_profit", ascending=False).head(10))
-else:
-    st.info("🚚 No profitable relocation suggestions available right now.")
-
-
-# -----------------------
 # PURCHASE SUGGESTIONS
 # -----------------------
 st.subheader("🛒 Purchase Suggestions Based on Market Gaps")
@@ -174,3 +123,4 @@ price_model.fit(Xp_train, yp_train)
 
 df["optimal_price"] = price_model.predict(Xp)
 st.dataframe(df[["Car_Name", "City", "Selling_Price", "optimal_price"]].head(10))
+
