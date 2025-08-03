@@ -11,7 +11,7 @@ def load_rto(uploaded_file):
     df.columns = df.columns.str.strip()
 
     df = df[df["Registrations"].notna()]
-    df_grouped = df.groupby("State Name")["Registrations"].sum().reset_index(name="rto_total")
+    df_grouped = df.groupby("state_name")["registrations"].sum().reset_index(name="rto_total")
     df_grouped["city"] = df_grouped["State Name"]  # calling state as city for display
 
     return df_grouped[["city", "rto_total"]]
@@ -92,4 +92,5 @@ if uploaded_file:
     st.dataframe(rto_df.sort_values("score_combined", ascending=False))
 else:
     st.warning("Please upload an RTO dataset CSV file to begin.")
+
 
