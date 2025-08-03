@@ -4,32 +4,18 @@ import numpy as np
 from pytrends.request import TrendReq
 import plotly.express as px
 
-# ------------------ Load RTO to City Mapping ------------------
-rto_city_map = {
-    "DELHI-NORTH": "Delhi", "DELHI-SOUTH": "Delhi", "DELHI-EAST": "Delhi",
-    "MUMBAI-WEST": "Mumbai", "MUMBAI-EAST": "Mumbai", "THANE": "Mumbai",
-    "BENGALURU-EAST": "Bengaluru", "BENGALURU-WEST": "Bengaluru",
-    "HYDERABAD-CENTRAL": "Hyderabad", "HYDERABAD-NORTH": "Hyderabad",
-    "CHENNAI-SOUTH": "Chennai", "CHENNAI-NORTH": "Chennai",
-    "KOLKATA (SALT LAKE)": "Kolkata", "KOLKATA (TOLLYGUNGE)": "Kolkata",
-    "PUNE": "Pune", "NAVI MUMBAI": "Mumbai", "GURGAON": "Gurgaon",
-    "FARIDABAD": "Delhi NCR", "LUCKNOW": "Lucknow", "AHMEDABAD": "Ahmedabad",
-    "JAIPUR": "Jaipur", "CHANDIGARH": "Chandigarh", "PATNA": "Patna",
-    "SURAT": "Surat", "BHOPAL": "Bhopal", "NAGPUR": "Nagpur"
-    # Extend with more as needed
-}
-
 # ------------------ Load RTO Data Automatically from URL ------------------
 @st.cache_data
 def load_rto():
-    url = "https://ckandev.indiadataportal.com/datastore/dump/cc32d3e2-7ea3-4b6b-94ab-85e57f6a0a3a?format=csv"  # Replace with actual public CSV URL
+    url = "https://ckandev.indiadataportal.com/datastore/dump/cc32d3e2-7ea3-4b6b-94ab-85e57f6a0a3a?format=csv"
     df = pd.read_csv(url)
-    df.columns = df.columns.str.strip()  # Remove any leading/trailing whitespace or BOM
-    df["city"] = df["RTO Name"].map(rto_city_map)
-    df = df[df["city"].notna()]  # drop rows with no mapped city
-    df_city = df.groupby("city")["Registrations"].sum().reset_index()
-    df_city.rename(columns={"Registrations": "rto_total"}, inplace=True)
-    return df_city
+    df.columns = df.columns.str.strip()
+
+    df = df[df["Registrations"].notna()]
+    df_grouped = df.groupby("State Name")["Registrations"].sum().reset_index(name="rto_total")
+    df_grouped["city"] = df_grouped["State Name"]  # calling state as city for display
+
+    return df_grouped[["city", "rto_total"]]
 
 rto_df = load_rto()
 
@@ -83,9 +69,9 @@ alpha = st.sidebar.slider("Weight for Google Trends", 0.0, 1.0, 0.5, step=0.1)
 rto_df["score_combined"] = (1 - alpha) * rto_df["score_rto"] + alpha * rto_df["score_trend_norm"]
 
 # ------------------ Visual Output ------------------
-st.title("Real-time City-wise Car Demand Map")
+st.title("Real-time State-wise Car Demand Map")
 
-selected_city = st.selectbox("Select City", sorted(rto_df["city"].unique()))
+selected_city = st.selectbox("Select State", sorted(rto_df["city"].unique()))
 row = rto_df[rto_df["city"] == selected_city].iloc[0]
 
 df_plot = pd.DataFrame({
@@ -101,5 +87,6 @@ fig = px.bar(df_plot, x="score_type", y="score",
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.write("## Full City-wise Score Table")
+st.write("## Full State-wise Score Table")
 st.dataframe(rto_df.sort_values("score_combined", ascending=False))
+
