@@ -8,7 +8,7 @@ import plotly.express as px
 @st.cache_data
 def load_rto(uploaded_file, group_col, reg_col):
     df = pd.read_csv(uploaded_file)
-    df.columns = df.columns.str.strip()  # Ensure clean column names again
+    df.columns = df.columns.astype(str).str.strip()  # Ensure clean string column names
 
     if reg_col not in df.columns or group_col not in df.columns:
         raise KeyError(f"Selected columns not found. Available columns: {list(df.columns)}")
@@ -23,10 +23,18 @@ st.title("Real-time State-wise Car Demand Map")
 uploaded_file = st.file_uploader("Upload RTO CSV File", type=["csv"])
 
 if uploaded_file:
-    df_preview = pd.read_csv(uploaded_file, nrows=100)
-    df_preview.columns = df_preview.columns.str.strip()
+    # Try reading without headers first to allow preview and column choice
+    df_preview_raw = pd.read_csv(uploaded_file, header=None, nrows=5)
+    st.subheader("📋 Raw Data Preview (First 5 Rows)")
+    st.dataframe(df_preview_raw)
 
-    st.subheader("Detected Columns")
+    use_header_row = st.checkbox("First row is header", value=True)
+    header_row = 0 if use_header_row else None
+
+    df_preview = pd.read_csv(uploaded_file, header=header_row, nrows=100)
+    df_preview.columns = df_preview.columns.astype(str).str.strip()
+
+    st.subheader("🧠 Detected Columns")
     st.write(list(df_preview.columns))
 
     group_col = st.selectbox("Select column to group by (e.g., State/UT or City)", options=list(df_preview.columns))
@@ -109,6 +117,7 @@ if uploaded_file:
             st.error(f"❌ Error: {e}")
 else:
     st.warning("Please upload an RTO dataset CSV file to begin.")
+
 
 
 
