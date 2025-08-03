@@ -6,16 +6,16 @@ import plotly.express as px
 
 # ------------------ Load Uploaded RTO Data ------------------
 @st.cache_data
-def load_rto(uploaded_file, reg_col):
+def load_rto(uploaded_file, group_col, reg_col):
     df = pd.read_csv(uploaded_file)
     df.columns = df.columns.str.strip()  # Ensure clean column names again
 
-    if reg_col not in df.columns:
-        raise KeyError(f"Selected column '{reg_col}' not found in uploaded data. Available columns: {list(df.columns)}")
+    if reg_col not in df.columns or group_col not in df.columns:
+        raise KeyError(f"Selected columns not found. Available columns: {list(df.columns)}")
 
     df = df[df[reg_col].notna()]
-    df_grouped = df.groupby("State Name")[reg_col].sum().reset_index(name="rto_total")
-    df_grouped["city"] = df_grouped["State Name"]  # calling state as city for display
+    df_grouped = df.groupby(group_col)[reg_col].sum().reset_index(name="rto_total")
+    df_grouped["city"] = df_grouped[group_col]  # calling group_col as city for display
 
     return df_grouped[["city", "rto_total"]]
 
@@ -29,11 +29,12 @@ if uploaded_file:
     st.subheader("Detected Columns")
     st.write(list(df_preview.columns))
 
+    group_col = st.selectbox("Select column to group by (e.g., State/UT or City)", options=list(df_preview.columns))
     reg_col = st.selectbox("Select column for registration count", options=list(df_preview.columns))
 
-    if reg_col:
+    if group_col and reg_col:
         try:
-            rto_df = load_rto(uploaded_file, reg_col)
+            rto_df = load_rto(uploaded_file, group_col, reg_col)
 
             # Normalize RTO demand
             rto_df["score_rto"] = (rto_df["rto_total"] - rto_df["rto_total"].min()) / (
@@ -108,6 +109,8 @@ if uploaded_file:
             st.error(f"❌ Error: {e}")
 else:
     st.warning("Please upload an RTO dataset CSV file to begin.")
+
+
 
 
 
