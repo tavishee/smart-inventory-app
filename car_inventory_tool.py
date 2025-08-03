@@ -89,4 +89,3 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.write("## Full State-wise Score Table")
 st.dataframe(rto_df.sort_values("score_combined", ascending=False))
-
