@@ -69,17 +69,6 @@ else:
 
     st.dataframe(fallback_df.sort_values("AvgDemandScore", ascending=False).head(10))
 
-
-
-# -----------------------
-# FUEL PRICE WIDGET
-# -----------------------
-st.sidebar.subheader("⛽ Fuel Cost Lookup")
-unique_cities = df["City"].dropna().unique()
-selected_city = st.sidebar.selectbox("Select city for fuel price", sorted(unique_cities))
-fuel_price = get_fuel_price(selected_city)
-st.sidebar.write(f"Fuel Price in {selected_city}: ₹{fuel_price} / L")
-
 # -----------------------
 # PURCHASE SUGGESTIONS
 # -----------------------
@@ -107,20 +96,3 @@ model = LinearRegression()
 model.fit(X_train, y_train)
 df["projected_demand"] = model.predict(X)
 st.dataframe(df[["Car_Name", "City", "past_demand", "days_on_platform", "projected_demand"]].head(10))
-
-# -----------------------
-# ML PRICE OPTIMIZATION
-# -----------------------
-st.subheader("💰 ML-Based Price Optimization")
-df = df.dropna(subset=["Selling_Price", "Present_Price", "DemandScore"])
-price_features = ["Present_Price", "DemandScore", "days_on_platform"]
-Xp = df[price_features]
-yp = df["Selling_Price"]
-
-Xp_train, Xp_test, yp_train, yp_test = train_test_split(Xp, yp, test_size=0.2, random_state=42)
-price_model = LinearRegression()
-price_model.fit(Xp_train, yp_train)
-
-df["optimal_price"] = price_model.predict(Xp)
-st.dataframe(df[["Car_Name", "City", "Selling_Price", "optimal_price"]].head(10))
-
