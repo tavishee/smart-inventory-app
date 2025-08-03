@@ -24,6 +24,7 @@ rto_city_map = {
 def load_rto():
     url = "https://ckandev.indiadataportal.com/datastore/dump/cc32d3e2-7ea3-4b6b-94ab-85e57f6a0a3a?format=csv"  # Replace with actual public CSV URL
     df = pd.read_csv(url)
+    df.columns = df.columns.str.strip()  # Remove any leading/trailing whitespace or BOM
     df["city"] = df["RTO Name"].map(rto_city_map)
     df = df[df["city"].notna()]  # drop rows with no mapped city
     df_city = df.groupby("city")["Registrations"].sum().reset_index()
