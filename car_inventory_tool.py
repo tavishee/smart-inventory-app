@@ -41,10 +41,9 @@ STATE_CAPITAL_CLUSTERS = {
     'Lakshadweep': 'Kavaratti'
 }
 
-# Special dual-cluster logic for large states
+# Special cluster logic
 def assign_cluster(state, office_name):
     name = office_name.lower()
-
     if state == 'Delhi':
         return 'Delhi'
     elif state == 'Uttar Pradesh':
@@ -58,10 +57,10 @@ def assign_cluster(state, office_name):
     elif state == 'Rajasthan':
         return 'Jodhpur' if 'jodhpur' in name else 'Jaipur'
     else:
-        return STATE_CAPITAL_CLUSTERS.get(state, state)  # fallback to state name
+        return STATE_CAPITAL_CLUSTERS.get(state, state)
 
-# Process uploaded file and cluster data
-def process_rto_data(uploaded_file, top_n=30):
+# Process uploaded file and assign cluster
+def process_rto_data(uploaded_file):
     try:
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
@@ -73,9 +72,10 @@ def process_rto_data(uploaded_file, top_n=30):
             return None
 
         df['Cluster_City'] = df.apply(lambda row: assign_cluster(row['state_name'], row['office_name']), axis=1)
-
         city_demand = df.groupby('Cluster_City')['registrations'].sum().reset_index()
-        city_demand['RTO_Score'] = (city_demand['registrations'] / city_demand['registrations'].sum()) * 100
+
+        # ✅ Scale changed from % to per 1000 (‰)
+        city_demand['RTO_Score'] = (city_demand['registrations'] / city_demand['registrations'].sum()) * 1000
         city_demand = city_demand.sort_values('RTO_Score', ascending=False)
 
         return city_demand[['Cluster_City', 'RTO_Score']].rename(columns={'Cluster_City': 'City'})
@@ -86,40 +86,40 @@ def process_rto_data(uploaded_file, top_n=30):
 
 # Main app
 def main():
-    st.title("🚗 City-wise Vehicle Demand Clustering via RTO Data")
+    st.title("🚗 RTO-Based Vehicle Demand Clustering")
     st.markdown("""
-    **Clusters RTO registrations under major cities based on their state and office name.**  
-    Large states like UP, Maharashtra, TN, etc. are split into two clusters based on demand centers.
+    Clusters RTO registrations under major cities based on their state and office name.  
+    Large states like UP, Maharashtra, TN, etc. are split into two clusters.  
+    **Demand score is shown per 1000 registrations (‰)** for better readability.
     """)
 
     with st.expander("📁 STEP 1: Upload RTO Data", expanded=True):
-        uploaded_file = st.file_uploader("Upload vehicle registration data (CSV/Excel)",
-                                         type=['csv', 'xlsx'],
-                                         help="File must include 'state_name', 'office_name', and 'registrations'")
+        uploaded_file = st.file_uploader("Upload RTO data (CSV or Excel)", type=['csv', 'xlsx'],
+                                         help="Must include 'state_name', 'office_name', and 'registrations' columns")
 
         if uploaded_file:
-            rto_data = process_rto_data(uploaded_file, top_n=30)
+            rto_data = process_rto_data(uploaded_file)
 
             if rto_data is not None:
-                st.success(f"✅ Clustered and processed data for {len(rto_data)} top cities")
+                st.success(f"✅ Processed and clustered {len(rto_data)} cities")
                 st.dataframe(rto_data)
 
-                with st.expander("📊 STEP 2: View Demand Analysis", expanded=True):
-                    st.header("📊 Demand by City Cluster (Top 30)")
+                with st.expander("📊 View Demand Chart", expanded=True):
+                    st.header("📊 Demand by City Cluster (per 1000 registrations)")
 
                     fig, ax = plt.subplots(figsize=(14, 10))
                     cities = rto_data['City']
                     positions = np.arange(len(cities))
                     bar_width = 0.6
 
-                    bars = ax.bar(positions, rto_data['RTO_Score'], bar_width,
-                                  label='RTO Demand', color='#1f77b4')
+                    bars = ax.bar(positions, rto_data['RTO_Score'], bar_width, color='#1f77b4')
                     ax.set_xticks(positions)
                     ax.set_xticklabels(cities, rotation=45, ha='right')
-                    ax.set_ylabel("Demand Score (%)")
-                    ax.set_title("RTO Vehicle Demand Clustered by City")
-                    ax.legend()
+                    ax.set_ylabel("Demand Score (‰ per 1000)")
+                    ax.set_title("Vehicle Demand by RTO Cluster")
+                    ax.grid(True, axis='y', linestyle='--', alpha=0.3)
 
+                    # Add value labels with 1 decimal
                     for bar in bars:
                         height = bar.get_height()
                         ax.text(bar.get_x() + bar.get_width()/2., height,
@@ -128,7 +128,7 @@ def main():
                     plt.tight_layout()
                     st.pyplot(fig)
 
-                    with st.expander("📋 View Detailed Data"):
+                    with st.expander("📋 Detailed Table"):
                         st.dataframe(rto_data.style
                                      .background_gradient(cmap='Blues', subset=['RTO_Score']),
                                      use_container_width=True)
@@ -143,4 +143,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
