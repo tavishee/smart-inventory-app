@@ -6,3 +6,4 @@ scikit-learn
 googlemaps
 pytrends
 python-dotenv
+matplotlib>=3.0.0
