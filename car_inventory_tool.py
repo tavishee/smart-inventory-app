@@ -76,7 +76,7 @@ def process_rto_data(uploaded_file, top_n=30):
 
         city_demand = df.groupby('Cluster_City')['registrations'].sum().reset_index()
         city_demand['RTO_Score'] = (city_demand['registrations'] / city_demand['registrations'].sum()) * 100
-        city_demand = city_demand.sort_values('RTO_Score', ascending=False).head(top_n)
+        city_demand = city_demand.sort_values('RTO_Score', ascending=False)
 
         return city_demand[['Cluster_City', 'RTO_Score']].rename(columns={'Cluster_City': 'City'})
 
@@ -143,3 +143,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
