@@ -123,3 +123,16 @@ def main():
 
                 # 📋 Data Table + Download
                 with st.expander("📋 Detailed Table"):
+                    st.dataframe(rto_data.style.background_gradient(cmap='Blues', subset=['RTO_Score']),
+                                 use_container_width=True)
+
+                csv = rto_data.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download Clustered Demand Data",
+                    data=csv,
+                    file_name=f"rto_clustered_demand_{datetime.now().strftime('%Y%m%d')}.csv",
+                    mime='text/csv'
+                )
+
+if __name__ == "__main__":
+    main()
