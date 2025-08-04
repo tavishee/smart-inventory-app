@@ -36,19 +36,19 @@ def process_rto_data(uploaded_file, top_n=30):
         else:
             df = pd.read_excel(uploaded_file)
         
-        # Check required columns
-        if 'City' not in df.columns or 'Count' not in df.columns:
-            st.error("Uploaded file must contain 'City' and 'Count' columns")
+        # Check required columns - we'll use 'office_name' as city and sum registrations
+        if 'office_name' not in df.columns or 'registrations' not in df.columns:
+            st.error("Uploaded file must contain 'office_name' and 'registrations' columns")
             return None
         
         # Cluster city regions
-        df['City_Cluster'] = df['City'].apply(cluster_cities)
+        df['City_Cluster'] = df['office_name'].apply(cluster_cities)
         
         # Aggregate by clustered city
-        city_demand = df.groupby('City_Cluster')['Count'].sum().reset_index()
+        city_demand = df.groupby('City_Cluster')['registrations'].sum().reset_index()
         
         # Calculate demand score and get top 30 cities
-        city_demand['RTO_Score'] = (city_demand['Count'] / city_demand['Count'].sum()) * 100
+        city_demand['RTO_Score'] = (city_demand['registrations'] / city_demand['registrations'].sum()) * 100
         city_demand = city_demand.sort_values('RTO_Score', ascending=False).head(top_n)
         
         return city_demand[['City_Cluster', 'RTO_Score']].rename(columns={'City_Cluster': 'City'})
@@ -120,13 +120,14 @@ def main():
     with st.expander("📁 STEP 1: Upload RTO Data", expanded=True):
         uploaded_file = st.file_uploader("Upload vehicle registration data (CSV/Excel)", 
                                        type=['csv', 'xlsx'],
-                                       help="File should contain 'City' and 'Count' columns")
+                                       help="File should contain vehicle registration data")
     
     if uploaded_file is not None:
         rto_data = process_rto_data(uploaded_file, top_n=30)
         
         if rto_data is not None:
             st.success(f"✅ Processed RTO data for {len(rto_data)} clustered cities")
+            st.dataframe(rto_data)
             
             # Keyword input section
             with st.expander("🔍 STEP 2: Configure Demand Analysis", expanded=True):
