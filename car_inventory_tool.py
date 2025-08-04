@@ -1,136 +1,175 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import re
 from datetime import datetime
 
-st.set_page_config(layout="wide")
+# -------------------------
+# City Clustering by State Capitals
+# -------------------------
 
-# State capital mappings
-STATE_CAPITAL_CLUSTERS = {
-    'Andhra Pradesh': 'Amaravati',
-    'Arunachal Pradesh': 'Itanagar',
-    'Assam': 'Dispur',
-    'Bihar': 'Patna',
-    'Chhattisgarh': 'Raipur',
-    'Goa': 'Panaji',
-    'Gujarat': 'Gandhinagar',
-    'Haryana': 'Chandigarh',
-    'Himachal Pradesh': 'Shimla',
-    'Jharkhand': 'Ranchi',
-    'Kerala': 'Thiruvananthapuram',
-    'Madhya Pradesh': 'Bhopal',
-    'Manipur': 'Imphal',
-    'Meghalaya': 'Shillong',
-    'Mizoram': 'Aizawl',
-    'Nagaland': 'Kohima',
-    'Odisha': 'Bhubaneswar',
-    'Punjab': 'Chandigarh',
-    'Sikkim': 'Gangtok',
-    'Telangana': 'Hyderabad',
-    'Tripura': 'Agartala',
-    'Uttarakhand': 'Dehradun',
-    'West Bengal': 'Kolkata',
-    'Jammu and Kashmir': 'Srinagar',
-    'Ladakh': 'Leh',
-    'Chandigarh': 'Chandigarh',
-    'Puducherry': 'Puducherry',
-    'Andaman and Nicobar Islands': 'Port Blair',
-    'Dadra and Nagar Haveli and Daman and Diu': 'Daman',
-    'Lakshadweep': 'Kavaratti'
+# 33 state clusters (Delhi is standalone, 5 states have 2 clusters)
+city_cluster_map = {
+    'Uttar Pradesh': ['Lucknow', 'Noida'],
+    'Maharashtra': ['Mumbai', 'Pune'],
+    'Karnataka': ['Bengaluru', 'Mysuru'],
+    'Tamil Nadu': ['Chennai', 'Coimbatore'],
+    'Rajasthan': ['Jaipur', 'Jodhpur'],
+    'Delhi': ['Delhi'],
+    'Andhra Pradesh': ['Amaravati'],
+    'Arunachal Pradesh': ['Itanagar'],
+    'Assam': ['Dispur'],
+    'Bihar': ['Patna'],
+    'Chhattisgarh': ['Raipur'],
+    'Goa': ['Panaji'],
+    'Gujarat': ['Gandhinagar'],
+    'Haryana': ['Chandigarh'],
+    'Himachal Pradesh': ['Shimla'],
+    'Jharkhand': ['Ranchi'],
+    'Kerala': ['Thiruvananthapuram'],
+    'Madhya Pradesh': ['Bhopal'],
+    'Manipur': ['Imphal'],
+    'Meghalaya': ['Shillong'],
+    'Mizoram': ['Aizawl'],
+    'Nagaland': ['Kohima'],
+    'Odisha': ['Bhubaneswar'],
+    'Punjab': ['Chandigarh'],
+    'Sikkim': ['Gangtok'],
+    'Telangana': ['Hyderabad'],
+    'Tripura': ['Agartala'],
+    'Uttarakhand': ['Dehradun'],
+    'West Bengal': ['Kolkata'],
 }
 
-# Custom clustering for large states
-def assign_cluster(state, office_name):
-    name = office_name.lower()
-    if state == 'Delhi':
-        return 'Delhi'
-    elif state == 'Uttar Pradesh':
-        return 'Noida' if any(k in name for k in ['noida', 'ghaziabad']) else 'Lucknow'
-    elif state == 'Maharashtra':
-        return 'Pune' if any(k in name for k in ['pune', 'chinchwad']) else 'Mumbai'
-    elif state == 'Karnataka':
-        return 'Mysuru' if 'mysore' in name or 'mysuru' in name else 'Bengaluru'
-    elif state == 'Tamil Nadu':
-        return 'Coimbatore' if 'coimbatore' in name else 'Chennai'
-    elif state == 'Rajasthan':
-        return 'Jodhpur' if 'jodhpur' in name else 'Jaipur'
-    else:
-        return STATE_CAPITAL_CLUSTERS.get(state, state)
+# Flatten the map to assign each RTO to its cluster
+rto_cluster_map = {}
+for state, clusters in city_cluster_map.items():
+    for city in clusters:
+        rto_cluster_map[city.lower()] = city
 
-# RTO data processor
-def process_rto_data(uploaded_file):
+def assign_cluster_by_state_office_name(office_name):
+    name = str(office_name).lower()
+    for cluster_key in rto_cluster_map:
+        if cluster_key in name:
+            return rto_cluster_map[cluster_key]
+    return "Other"
+
+# -------------------------
+# Process RTO Data
+# -------------------------
+def process_rto_data(uploaded_file, top_n=34):
     try:
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
         else:
             df = pd.read_excel(uploaded_file)
 
-        required_cols = {'state_name', 'office_name', 'registrations'}
-        if not required_cols.issubset(df.columns):
-            st.error("File must contain: state_name, office_name, registrations")
+        if 'office_name' not in df.columns or 'registrations' not in df.columns or 'vehicle_class' not in df.columns:
+            st.error("Uploaded file must contain 'office_name', 'registrations', and 'vehicle_class' columns")
             return None
 
-        df['Cluster_City'] = df.apply(lambda row: assign_cluster(row['state_name'], row['office_name']), axis=1)
-        city_demand = df.groupby('Cluster_City')['registrations'].sum().reset_index()
+        # Assign clusters
+        df['City_Cluster'] = df['office_name'].apply(assign_cluster_by_state_office_name)
 
-        # Demand per 1000 (‰)
-        city_demand['RTO_Score'] = (city_demand['registrations'] / city_demand['registrations'].sum()) * 1000
-        city_demand = city_demand.sort_values('RTO_Score', ascending=False)
+        # Total registrations per cluster
+        total_regs = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
 
-        return city_demand[['Cluster_City', 'RTO_Score']].rename(columns={'Cluster_City': 'City'})
+        # Vehicle class weighting
+        weights = {
+            'SUV': 1.2,
+            'Sedan': 1.0,
+            'Hatchback': 0.9,
+            'Two-Wheeler': 0.5,
+            'Three-Wheeler': 0.4,
+            'Tractor': 0.3,
+            'LCV': 0.8,
+            'MCV': 0.6,
+            'HCV': 0.5
+        }
+
+        df['Class_Weight'] = df['vehicle_class'].map(weights).fillna(0.5)
+        df['Weighted_Class_Score'] = df['registrations'] * df['Class_Weight']
+
+        class_scores = df.groupby('City_Cluster')['Weighted_Class_Score'].sum().reset_index(name='Class_Weighted')
+
+        # Merge
+        merged = pd.merge(total_regs, class_scores, on='City_Cluster')
+
+        # Normalize scores
+        merged['Volume_Score'] = (merged['Total_Registrations'] / merged['Total_Registrations'].sum()) * 1000
+        merged['Class_Score'] = (merged['Class_Weighted'] / merged['Class_Weighted'].sum()) * 1000
+
+        # Final composite score
+        merged['Buying_Strength_Score'] = (
+            0.7 * merged['Volume_Score'] +
+            0.3 * merged['Class_Score']
+        )
+
+        result = merged.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
+        return result
 
     except Exception as e:
         st.error(f"Error processing RTO data: {str(e)}")
         return None
 
-# Main Streamlit App
+# -------------------------
+# Streamlit UI
+# -------------------------
 def main():
-    st.title("🚗 RTO-Based Vehicle Demand Clustering")
+    st.set_page_config(layout="wide")
+    st.title("🚗 Used Car Market - City-wise Buying Strength Analysis")
     st.markdown("""
-    Clusters RTO registrations under major cities based on their state and office name.  
-    Large states like UP, Maharashtra, TN, etc. are split into two clusters.  
-    **Demand score is shown per 1000 registrations (‰)** for better readability.  
-    Includes an interactive chart and downloadable table.
+    This tool ranks Indian cities by **used car buying strength**, based on:
+    - Total vehicle registrations
+    - Weighted mix of vehicle classes (SUVs, Sedans, Bikes, etc.)
+    
+    The final score reflects **overall demand potential**, not just for one fuel or model type.
     """)
 
-    with st.expander("📁 STEP 1: Upload RTO Data", expanded=True):
-        uploaded_file = st.file_uploader("Upload RTO data (CSV or Excel)", type=['csv', 'xlsx'],
-                                         help="Must include 'state_name', 'office_name', and 'registrations' columns")
+    with st.expander("📁 Upload RTO Data", expanded=True):
+        uploaded_file = st.file_uploader("Upload vehicle registration data (CSV/Excel)",
+                                         type=['csv', 'xlsx'],
+                                         help="Must include columns: office_name, registrations, vehicle_class")
 
         if uploaded_file:
-            rto_data = process_rto_data(uploaded_file)
+            df = process_rto_data(uploaded_file, top_n=34)
+            if df is not None:
+                st.success("✅ Processed successfully.")
+                st.dataframe(df[['City_Cluster', 'Volume_Score', 'Class_Score', 'Buying_Strength_Score']])
 
-            if rto_data is not None:
-                st.success(f"✅ Clustered and processed {len(rto_data)} cities")
-                st.dataframe(rto_data)
+                # Plotly interactive chart
+                fig = go.Figure()
+                fig.add_trace(go.Bar(
+                    y=df['City_Cluster'],
+                    x=df['Volume_Score'],
+                    name='Volume Score',
+                    orientation='h',
+                    marker_color='steelblue'
+                ))
+                fig.add_trace(go.Bar(
+                    y=df['City_Cluster'],
+                    x=df['Class_Score'],
+                    name='Class Score',
+                    orientation='h',
+                    marker_color='seagreen'
+                ))
+                fig.update_layout(
+                    barmode='stack',
+                    title='📊 Buying Strength Score by City Cluster',
+                    xaxis_title='Composite Demand Score (0–1000 scale)',
+                    yaxis_title='City Cluster',
+                    height=800,
+                    legend=dict(orientation="h", y=-0.2)
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
-                # 📊 Interactive Chart
-                with st.expander("📊 View Demand Chart", expanded=True):
-                    st.header("📊 Interactive Demand Chart (per 1000 registrations)")
-
-                    fig = px.bar(
-                        rto_data,
-                        x='City',
-                        y='RTO_Score',
-                        title="Vehicle Demand by City Cluster",
-                        labels={'RTO_Score': 'Demand Score (‰ per 1000)'},
-                        hover_data={'City': True, 'RTO_Score': ':.2f'},
-                        height=600
-                    )
-                    fig.update_layout(xaxis_tickangle=-45)
-                    st.plotly_chart(fig, use_container_width=True)
-
-                # 📋 Data Table + Download
-                with st.expander("📋 Detailed Table"):
-                    st.dataframe(rto_data.style.background_gradient(cmap='Blues', subset=['RTO_Score']),
-                                 use_container_width=True)
-
-                csv = rto_data.to_csv(index=False)
+                # Download
                 st.download_button(
-                    label="📥 Download Clustered Demand Data",
-                    data=csv,
-                    file_name=f"rto_clustered_demand_{datetime.now().strftime('%Y%m%d')}.csv",
+                    label="📥 Download Results as CSV",
+                    data=df.to_csv(index=False),
+                    file_name=f"buying_strength_{datetime.now().strftime('%Y%m%d')}.csv",
                     mime='text/csv'
                 )
 
