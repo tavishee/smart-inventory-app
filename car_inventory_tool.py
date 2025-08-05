@@ -20,7 +20,12 @@ def extract_state_code(office_name):
 def assign_state_cluster(row):
     code = row['state_code']
     if code in split_states:
-        return f"{code}_A" if hash(row['office_name']) % 2 == 0 else f"{code}_B"
+        office = str(row['office_name']).strip().upper()
+        first_letter = office[0]
+        if 'A' <= first_letter <= 'M':
+            return f"{code}_A"
+        else:
+            return f"{code}_B"
     return code
 
 # -------------------------
@@ -117,3 +122,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
