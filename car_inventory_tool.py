@@ -19,7 +19,7 @@ def extract_state_code(office_name):
 
 
 def assign_state_cluster(row):
-    code = row['state_code']
+    code = row['office_code']
     if code in split_states:
         office = str(row['office_name']).strip().upper()
         # Use alphabetical split based on office name
@@ -47,11 +47,11 @@ def process_rto_data(uploaded_file, top_n=34):
 
         # Clean and filter class_type
         df['class_type'] = df['class_type'].astype(str).str.strip().str.lower()
-        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'm cycle', 'scooter'}
+        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'M-Cycle/Scooter'}
         df = df[df['class_type'].isin(allowed_classes)]
 
         # Extract state code and assign clusters
-        df['state_code'] = df['office_name'].apply(extract_state_code)
+        df['office_code'] = df['office_name'].apply(extract_office_code)
         df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
         df = df[df['City_Cluster'].notna()]
 
@@ -124,3 +124,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
