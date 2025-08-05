@@ -148,7 +148,7 @@ def main():
             df = process_rto_data(uploaded_file, top_n=34)
             if df is not None:
                 st.success("✅ Processed successfully.")
-                st.dataframe(df[['City_Cluster', 'Total_Registrations', 'Volume_Score', 'Buying_Strength_Score', 'Demand_Density_per_1000_km2']])
+                st.dataframe(result[['City_Cluster', 'Total_Registrations', 'Volume_Score', 'Buying_Strength_Score', 'Demand_Density_per_1000_km2']])
 
 
                 # Plotly interactive chart
@@ -179,6 +179,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
