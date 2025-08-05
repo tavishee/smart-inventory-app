@@ -6,28 +6,22 @@ import re
 from datetime import datetime
 
 # -------------------------
-# Area-based Custom 34 City Clusters (simulated version)
+# Custom State-Based Clustering
 # -------------------------
 
-# 34 clusters within state boundaries, based on major cities
-cluster_cities = [
-    'Delhi', 'Mumbai', 'Pune', 'Nagpur', 'Ahmedabad', 'Surat', 'Jaipur', 'Jodhpur',
-    'Lucknow', 'Noida', 'Kanpur', 'Chennai', 'Coimbatore', 'Bengaluru', 'Mysuru',
-    'Hyderabad', 'Warangal', 'Bhopal', 'Indore', 'Patna', 'Ranchi', 'Raipur',
-    'Kolkata', 'Asansol', 'Guwahati', 'Dispur', 'Bhubaneswar', 'Cuttack',
-    'Thiruvananthapuram', 'Kochi', 'Dehradun', 'Shimla', 'Panaji', 'Chandigarh'
-]
+# Large states split into two clusters
+split_states = {'MH', 'UP', 'RJ', 'TN', 'KA'}
 
-# Lowercased map for matching
-rto_cluster_map = {city.lower(): city for city in cluster_cities}
+def extract_state_code(office_name):
+    match = re.match(r'([A-Z]{2})\d+', str(office_name).strip())
+    return match.group(1) if match else None
 
-def assign_cluster_by_office_name(office_name):
-    name = str(office_name).lower()
-    name = re.sub(r'\b(rto|uo|office|hq|zone|unit)\b', '', name).strip()
-    for key in rto_cluster_map:
-        if key in name:
-            return rto_cluster_map[key]
-    return None
+def assign_state_cluster(row):
+    code = row['state_code']
+    if code in split_states:
+        # Use office name hash to split deterministically
+        return f"{code}_A" if hash(row['office_name']) % 2 == 0 else f"{code}_B"
+    return code
 
 # -------------------------
 # Process RTO Data
@@ -39,49 +33,28 @@ def process_rto_data(uploaded_file, top_n=34):
         else:
             df = pd.read_excel(uploaded_file)
 
-        if 'office_name' not in df.columns or 'registrations' not in df.columns or 'class_type' not in df.columns:
+        required_cols = {'office_name', 'registrations', 'class_type'}
+        if not required_cols.issubset(set(df.columns)):
             st.error("Uploaded file must contain 'office_name', 'registrations', and 'class_type' columns")
             return None
 
-        # Assign clusters
-        df['City_Cluster'] = df['office_name'].apply(assign_cluster_by_office_name)
-        df = df[df['City_Cluster'].notna()]  # drop unmatched
+        # Filter only relevant class_type values
+        allowed_classes = {'Motor Car', 'Luxury Cab', 'Maxi Cab', 'M-Cycle/Scooter'}
+        df = df[df['class_type'].isin(allowed_classes)]
 
-        # Total registrations per cluster
-        total_regs = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
+        # Assign state code and cluster
+        df['state_code'] = df['office_name'].apply(extract_state_code)
+        df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
+        df = df[df['City_Cluster'].notna()]
 
-        # Vehicle class weighting
-        weights = {
-            'SUV': 1.2,
-            'Sedan': 1.0,
-            'Hatchback': 0.9,
-            'Two-Wheeler': 0.5,
-            'Three-Wheeler': 0.4,
-            'Tractor': 0.3,
-            'LCV': 0.8,
-            'MCV': 0.6,
-            'HCV': 0.5
-        }
+        # Group by cluster and compute total registrations
+        cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
 
-        df['Class_Weight'] = df['class_type'].map(weights).fillna(0.5)
-        df['Weighted_Class_Score'] = df['registrations'] * df['Class_Weight']
+        # Normalize scores to 0–1000 scale
+        cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
+        cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']  # Since class type weight removed
 
-        class_scores = df.groupby('City_Cluster')['Weighted_Class_Score'].sum().reset_index(name='Class_Weighted')
-
-        # Merge
-        merged = pd.merge(total_regs, class_scores, on='City_Cluster')
-
-        # Normalize scores
-        merged['Volume_Score'] = (merged['Total_Registrations'] / merged['Total_Registrations'].sum()) * 1000
-        merged['Class_Score'] = (merged['Class_Weighted'] / merged['Class_Weighted'].sum()) * 1000
-
-        # Final composite score
-        merged['Buying_Strength_Score'] = (
-            0.7 * merged['Volume_Score'] +
-            0.3 * merged['Class_Score']
-        )
-
-        result = merged.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
+        result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
         return result
 
     except Exception as e:
@@ -96,8 +69,7 @@ def main():
     st.title("🚗 Used Car Market - City-wise Buying Strength Analysis")
     st.markdown("""
     This tool ranks Indian cities by **used car buying strength**, based on:
-    - Total vehicle registrations
-    - Weighted mix of vehicle classes (SUVs, Sedans, Bikes, etc.)
+    - Total vehicle registrations (filtered for Motor Car, Luxury Cab, Maxi Cab, M Cycle, Scooter)
     
     The final score reflects **overall demand potential**, not just for one fuel or model type.
     """)
@@ -111,7 +83,7 @@ def main():
             df = process_rto_data(uploaded_file, top_n=34)
             if df is not None:
                 st.success("✅ Processed successfully.")
-                st.dataframe(df[['City_Cluster', 'Volume_Score', 'Class_Score', 'Buying_Strength_Score']])
+                st.dataframe(df[['City_Cluster', 'Volume_Score', 'Buying_Strength_Score']])
 
                 # Plotly interactive chart
                 fig = go.Figure()
@@ -122,18 +94,10 @@ def main():
                     orientation='h',
                     marker_color='steelblue'
                 ))
-                fig.add_trace(go.Bar(
-                    y=df['City_Cluster'],
-                    x=df['Class_Score'],
-                    name='Class Score',
-                    orientation='h',
-                    marker_color='seagreen'
-                ))
                 fig.update_layout(
-                    barmode='stack',
-                    title='📊 Buying Strength Score by City Cluster',
+                    title='📊 Buying Strength Score by State Cluster',
                     xaxis_title='Composite Demand Score (0–1000 scale)',
-                    yaxis_title='City Cluster',
+                    yaxis_title='State Cluster',
                     height=800,
                     legend=dict(orientation="h", y=-0.2)
                 )
@@ -149,4 +113,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
