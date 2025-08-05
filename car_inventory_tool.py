@@ -84,6 +84,14 @@ def process_rto_data(uploaded_file, top_n=34):
         cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
         cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
         cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
+        # Add cluster area (in km²)
+        cluster_scores['Cluster_Area_km2'] = cluster_scores['City_Cluster'].apply(get_cluster_area)
+
+# Add Demand Density (registrations per 1000 km²)
+        cluster_scores['Demand_Density_per_1000_km2'] = (
+        cluster_scores['Total_Registrations'] / cluster_scores['Cluster_Area_km2']
+        ) * 1000
+
 
         result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
         return result
@@ -146,7 +154,6 @@ def main():
 
         if uploaded_file:
             result = process_rto_data(uploaded_file, top_n=34)
-            st.write("Columns in result:", result.columns.tolist())
             if result is not None:
                 st.success("✅ Processed successfully.")
                 st.dataframe(result[['City_Cluster', 'Total_Registrations', 'Volume_Score', 'Buying_Strength_Score', 'Demand_Density_per_1000_km2']])
@@ -155,8 +162,8 @@ def main():
                 # Plotly interactive chart
                 fig = go.Figure()
                 fig.add_trace(go.Bar(
-                    y=df['City_Cluster'],
-                    x=df['Volume_Score'],
+                    y=result['City_Cluster'],
+                    x=result['Volume_Score'],
                     name='Volume Score',
                     orientation='h',
                     marker_color='steelblue'
@@ -173,13 +180,14 @@ def main():
                 # Download
                 st.download_button(
                     label="📥 Download Results as CSV",
-                    data=df.to_csv(index=False),
+                    data=result.to_csv(index=False),
                     file_name=f"buying_strength_{datetime.now().strftime('%Y%m%d')}.csv",
                     mime='text/csv'
                 )
 
 if __name__ == "__main__":
     main()
+
 
 
 
