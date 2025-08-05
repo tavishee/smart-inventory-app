@@ -17,16 +17,18 @@ def extract_state_code(office_name):
     match = re.search(r'\b([A-Z]{2})\d{1,2}', str(office_name).upper())
     return match.group(1) if match else None
 
+
 def assign_state_cluster(row):
     code = row['state_code']
     if code in split_states:
         office = str(row['office_name']).strip().upper()
-        first_letter = office[0]
-        if 'A' <= first_letter <= 'M':
+        # Use alphabetical split based on office name
+        if office < 'M':
             return f"{code}_A"
         else:
             return f"{code}_B"
     return code
+
 
 # -------------------------
 # Process RTO Data
@@ -78,7 +80,7 @@ def main():
     st.title("🚗 Used Car Market - State-wise Buying Strength Analysis")
     st.markdown("""
     This tool ranks Indian states by **used car buying strength**, based on:
-    - Total vehicle registrations (filtered for Motor Car, Luxury Cab, Maxi Cab, M-Cycle/Scooter)
+    - Total vehicle registrations (filtered for Motor Car, Luxury Cab, Maxi Cab, M Cycle, Scooter)
     
     The final score reflects **overall demand potential**, not just for one fuel or model type.
     """)
@@ -122,4 +124,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
