@@ -9,6 +9,24 @@ from datetime import datetime
 # -------------------------
 # Custom State-Based Clustering
 # -------------------------
+# State/UT area in km²
+state_area_km2 = {
+    'RJ': 342239, 'MP': 308252, 'MH': 307713, 'UP': 240928, 'GJ': 196024,
+    'KA': 191791, 'AP': 162975, 'OD': 155707, 'CG': 135192, 'TN': 130058,
+    'TG': 112077, 'BR': 94163, 'WB': 88752, 'AR': 83743, 'JH': 79716,
+    'AS': 78438, 'HP': 55673, 'UK': 53483, 'PB': 50362, 'HR': 44212,
+    'KL': 38863, 'ML': 22429, 'MN': 22327, 'MZ': 21081, 'NL': 16579,
+    'TR': 10491, 'SK': 7096, 'GA': 3702, 'AN': 8249, 'JK': 42241,
+    'LA': 59146, 'DL': 1484, 'DD': 603, 'PY': 479, 'CH': 114, 'LD': 32
+}
+
+def get_cluster_area(cluster):
+    """Return area of cluster in km². Split clusters get half area."""
+    if '_' in cluster:  # e.g., MH_A, UP_B
+        code = cluster.split('_')[0]
+        return state_area_km2.get(code, 0) / 2
+    return state_area_km2.get(cluster, 0)
+
 
 # Large states split into two clusters
 split_states = {'MH', 'UP', 'RJ', 'TN', 'KA'}
@@ -97,6 +115,13 @@ def process_rto_data(uploaded_file, top_n=34):
         result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
         return result
 
+        # Add cluster area (in km²)
+        result['Cluster_Area_km2'] = result['City_Cluster'].apply(get_cluster_area)
+
+        # Add Demand Density (registrations per 1000 km²)
+        result['Demand_Density_per_1000_km2'] = (result['Total_Registrations'] / result['Cluster_Area_km2']) * 1000
+
+
     except Exception as e:
         st.error(f"Error processing RTO data: {str(e)}")
         return None
@@ -123,7 +148,8 @@ def main():
             df = process_rto_data(uploaded_file, top_n=34)
             if df is not None:
                 st.success("✅ Processed successfully.")
-                st.dataframe(df[['City_Cluster', 'Volume_Score', 'Buying_Strength_Score']])
+                st.dataframe(df[['City_Cluster', 'Total_Registrations', 'Volume_Score', 'Buying_Strength_Score', 'Demand_Density_per_1000_km2']])
+
 
                 # Plotly interactive chart
                 fig = go.Figure()
@@ -153,6 +179,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
