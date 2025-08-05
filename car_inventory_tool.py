@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -13,13 +14,12 @@ from datetime import datetime
 split_states = {'MH', 'UP', 'RJ', 'TN', 'KA'}
 
 def extract_state_code(office_name):
-    match = re.match(r'([A-Z]{2})\d+', str(office_name).strip())
+    match = re.search(r'\b([A-Z]{2})\d{1,2}', str(office_name).upper())
     return match.group(1) if match else None
 
 def assign_state_cluster(row):
     code = row['state_code']
     if code in split_states:
-        # Use office name hash to split deterministically
         return f"{code}_A" if hash(row['office_name']) % 2 == 0 else f"{code}_B"
     return code
 
@@ -38,21 +38,25 @@ def process_rto_data(uploaded_file, top_n=34):
             st.error("Uploaded file must contain 'office_name', 'registrations', and 'class_type' columns")
             return None
 
-        # Filter only relevant class_type values
-        allowed_classes = {'Motor Car', 'Luxury Cab', 'Maxi Cab', 'M-Cycle/Scooter'}
+        # Clean and filter class_type
+        df['class_type'] = df['class_type'].astype(str).str.strip().str.lower()
+        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'm cycle', 'scooter'}
         df = df[df['class_type'].isin(allowed_classes)]
 
-        # Assign state code and cluster
+        # Extract state code and assign clusters
         df['state_code'] = df['office_name'].apply(extract_state_code)
         df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
         df = df[df['City_Cluster'].notna()]
 
-        # Group by cluster and compute total registrations
-        cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
+        # Check if data is empty
+        if df.empty:
+            st.warning("Filtered dataset is empty. Please check class_type or office_name values.")
+            return None
 
-        # Normalize scores to 0–1000 scale
+        # Group by cluster and calculate scores
+        cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
         cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
-        cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']  # Since class type weight removed
+        cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
 
         result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
         return result
@@ -66,10 +70,10 @@ def process_rto_data(uploaded_file, top_n=34):
 # -------------------------
 def main():
     st.set_page_config(layout="wide")
-    st.title("🚗 Used Car Market - City-wise Buying Strength Analysis")
+    st.title("🚗 Used Car Market - State-wise Buying Strength Analysis")
     st.markdown("""
-    This tool ranks Indian cities by **used car buying strength**, based on:
-    - Total vehicle registrations (filtered for Motor Car, Luxury Cab, Maxi Cab, M Cycle, Scooter)
+    This tool ranks Indian states by **used car buying strength**, based on:
+    - Total vehicle registrations (filtered for Motor Car, Luxury Cab, Maxi Cab, M-Cycle/Scooter)
     
     The final score reflects **overall demand potential**, not just for one fuel or model type.
     """)
@@ -113,5 +117,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
