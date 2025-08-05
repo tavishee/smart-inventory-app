@@ -51,7 +51,7 @@ def process_rto_data(uploaded_file, top_n=34):
         df = df[df['class_type'].isin(allowed_classes)]
 
         # Extract state code and assign clusters
-        df['office_code'] = df['office_name'].apply(extract_office_code)
+        df['office_code'] = df['office_name'].apply(office_code)
         df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
         df = df[df['City_Cluster'].notna()]
 
@@ -124,4 +124,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
