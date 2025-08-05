@@ -66,8 +66,8 @@ def process_rto_data(uploaded_file, top_n=34):
         else:
             df = pd.read_excel(uploaded_file)
 
-        if 'office_name' not in df.columns or 'registrations' not in df.columns or 'vehicle_class' not in df.columns:
-            st.error("Uploaded file must contain 'office_name', 'registrations', and 'vehicle_class' columns")
+        if 'office_name' not in df.columns or 'registrations' not in df.columns or 'class_type' not in df.columns:
+            st.error("Uploaded file must contain 'office_name', 'registrations', and 'class_type' columns")
             return None
 
         # Assign clusters
@@ -89,7 +89,7 @@ def process_rto_data(uploaded_file, top_n=34):
             'HCV': 0.5
         }
 
-        df['Class_Weight'] = df['vehicle_class'].map(weights).fillna(0.5)
+        df['Class_Weight'] = df['class_type'].map(weights).fillna(0.5)
         df['Weighted_Class_Score'] = df['registrations'] * df['Class_Weight']
 
         class_scores = df.groupby('City_Cluster')['Weighted_Class_Score'].sum().reset_index(name='Class_Weighted')
@@ -131,7 +131,7 @@ def main():
     with st.expander("📁 Upload RTO Data", expanded=True):
         uploaded_file = st.file_uploader("Upload vehicle registration data (CSV/Excel)",
                                          type=['csv', 'xlsx'],
-                                         help="Must include columns: office_name, registrations, vehicle_class")
+                                         help="Must include columns: office_name, registrations, class_type")
 
         if uploaded_file:
             df = process_rto_data(uploaded_file, top_n=34)
@@ -175,3 +175,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
