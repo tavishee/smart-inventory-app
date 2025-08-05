@@ -1,60 +1,33 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import re
 from datetime import datetime
 
 # -------------------------
-# City Clustering by State Capitals
+# Area-based Custom 34 City Clusters (simulated version)
 # -------------------------
 
-# 33 state clusters (Delhi is standalone, 5 states have 2 clusters)
-city_cluster_map = {
-    'Uttar Pradesh': ['Lucknow', 'Noida'],
-    'Maharashtra': ['Mumbai', 'Pune'],
-    'Karnataka': ['Bengaluru', 'Mysuru'],
-    'Tamil Nadu': ['Chennai', 'Coimbatore'],
-    'Rajasthan': ['Jaipur', 'Jodhpur'],
-    'Delhi': ['Delhi'],
-    'Andhra Pradesh': ['Amaravati'],
-    'Arunachal Pradesh': ['Itanagar'],
-    'Assam': ['Dispur'],
-    'Bihar': ['Patna'],
-    'Chhattisgarh': ['Raipur'],
-    'Goa': ['Panaji'],
-    'Gujarat': ['Gandhinagar'],
-    'Haryana': ['Chandigarh'],
-    'Himachal Pradesh': ['Shimla'],
-    'Jharkhand': ['Ranchi'],
-    'Kerala': ['Thiruvananthapuram'],
-    'Madhya Pradesh': ['Bhopal'],
-    'Manipur': ['Imphal'],
-    'Meghalaya': ['Shillong'],
-    'Mizoram': ['Aizawl'],
-    'Nagaland': ['Kohima'],
-    'Odisha': ['Bhubaneswar'],
-    'Punjab': ['Chandigarh'],
-    'Sikkim': ['Gangtok'],
-    'Telangana': ['Hyderabad'],
-    'Tripura': ['Agartala'],
-    'Uttarakhand': ['Dehradun'],
-    'West Bengal': ['Kolkata'],
-}
+# 34 clusters within state boundaries, based on major cities
+cluster_cities = [
+    'Delhi', 'Mumbai', 'Pune', 'Nagpur', 'Ahmedabad', 'Surat', 'Jaipur', 'Jodhpur',
+    'Lucknow', 'Noida', 'Kanpur', 'Chennai', 'Coimbatore', 'Bengaluru', 'Mysuru',
+    'Hyderabad', 'Warangal', 'Bhopal', 'Indore', 'Patna', 'Ranchi', 'Raipur',
+    'Kolkata', 'Asansol', 'Guwahati', 'Dispur', 'Bhubaneswar', 'Cuttack',
+    'Thiruvananthapuram', 'Kochi', 'Dehradun', 'Shimla', 'Panaji', 'Chandigarh'
+]
 
-# Flatten the map to assign each RTO to its cluster
-rto_cluster_map = {}
-for state, clusters in city_cluster_map.items():
-    for city in clusters:
-        rto_cluster_map[city.lower()] = city
+# Lowercased map for matching
+rto_cluster_map = {city.lower(): city for city in cluster_cities}
 
-def assign_cluster_by_state_office_name(office_name):
+def assign_cluster_by_office_name(office_name):
     name = str(office_name).lower()
-    for cluster_key in rto_cluster_map:
-        if cluster_key in name:
-            return rto_cluster_map[cluster_key]
-    return "Other"
+    name = re.sub(r'\b(rto|uo|office|hq|zone|unit)\b', '', name).strip()
+    for key in rto_cluster_map:
+        if key in name:
+            return rto_cluster_map[key]
+    return None
 
 # -------------------------
 # Process RTO Data
@@ -71,7 +44,8 @@ def process_rto_data(uploaded_file, top_n=34):
             return None
 
         # Assign clusters
-        df['City_Cluster'] = df['office_name'].apply(assign_cluster_by_state_office_name)
+        df['City_Cluster'] = df['office_name'].apply(assign_cluster_by_office_name)
+        df = df[df['City_Cluster'].notna()]  # drop unmatched
 
         # Total registrations per cluster
         total_regs = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
@@ -175,4 +149,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
