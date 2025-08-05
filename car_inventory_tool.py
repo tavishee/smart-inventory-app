@@ -1,15 +1,13 @@
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 import re
 from datetime import datetime
 
 # -------------------------
-# Custom State-Based Clustering
+# Custom State-Based Clustering and Area Logic
 # -------------------------
-# State/UT area in km²
 state_area_km2 = {
     'RJ': 342239, 'MP': 308252, 'MH': 307713, 'UP': 240928, 'GJ': 196024,
     'KA': 191791, 'AP': 162975, 'OD': 155707, 'CG': 135192, 'TN': 130058,
@@ -21,14 +19,11 @@ state_area_km2 = {
 }
 
 def get_cluster_area(cluster):
-    """Return area of cluster in km². Split clusters get half area."""
-    if '_' in cluster:  # e.g., MH_A, UP_B
+    if '_' in cluster:
         code = cluster.split('_')[0]
         return state_area_km2.get(code, 0) / 2
     return state_area_km2.get(cluster, 0)
 
-
-# Large states split into two clusters
 split_states = {'MH', 'UP', 'RJ', 'TN', 'KA'}
 
 def extract_office_prefix(office_code):
@@ -46,8 +41,6 @@ def assign_state_cluster(row):
             return f"{code}_A"
     return code
 
-
-
 # -------------------------
 # Process RTO Data
 # -------------------------
@@ -63,72 +56,28 @@ def process_rto_data(uploaded_file, top_n=34):
             st.error("Uploaded file must contain 'office_name', 'office_code', 'registrations', and 'class_type' columns")
             return None
 
-        # Clean and filter class_type
         df['class_type'] = df['class_type'].astype(str).str.strip().str.lower()
         allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'm-cycle/scooter'}
         df = df[df['class_type'].isin(allowed_classes)]
 
-        # Extract state prefix from office_code
         df['state_code'] = df['office_code'].apply(extract_office_prefix)
-
-        # Assign clusters
         df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
         df = df[df['City_Cluster'].notna()]
 
-        # Check if data is empty
         if df.empty:
             st.warning("Filtered dataset is empty. Please check class_type or office_code values.")
             return None
 
-        # Group and score
         cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
         cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
         cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
-        # Add cluster area (in km²)
         cluster_scores['Cluster_Area_km2'] = cluster_scores['City_Cluster'].apply(get_cluster_area)
-
-# Add Demand Density (registrations per 1000 km²)
         cluster_scores['Demand_Density_per_1000_km2'] = (
-        cluster_scores['Total_Registrations'] / cluster_scores['Cluster_Area_km2']
+            cluster_scores['Total_Registrations'] / cluster_scores['Cluster_Area_km2']
         ) * 1000
 
-
         result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
         return result
-
-    except Exception as e:
-        st.error(f"Error processing RTO data: {str(e)}")
-        return None
-
-        # Clean and filter class_type
-        df['class_type'] = df['class_type'].astype(str).str.strip().str.lower()
-        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'M-Cycle/Scooter'}
-        df = df[df['class_type'].isin(allowed_classes)]
-
-        # Extract state code and assign clusters
-        df['office_code'] = df['office_name'].apply(office_code)
-        df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
-        df = df[df['City_Cluster'].notna()]
-
-        # Check if data is empty
-        if df.empty:
-            st.warning("Filtered dataset is empty. Please check class_type or office_name values.")
-            return None
-
-        # Group by cluster and calculate scores
-        cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
-        cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
-        cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
-
-        result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
-        return result
-
-        # Add cluster area (in km²)
-        result['Cluster_Area_km2'] = result['City_Cluster'].apply(get_cluster_area)
-
-        # Add Demand Density (registrations per 1000 km²)
-        result['Demand_Density_per_1000_km2'] = (result['Total_Registrations'] / result['Cluster_Area_km2']) * 1000
-
 
     except Exception as e:
         st.error(f"Error processing RTO data: {str(e)}")
@@ -143,23 +92,21 @@ def main():
     st.markdown("""
     This tool ranks Indian states by **used car buying strength**, based on:
     - Total vehicle registrations (filtered for Motor Car, Luxury Cab, Maxi Cab, M Cycle, Scooter)
-    
-    The final score reflects **overall demand potential**, not just for one fuel or model type.
+    - Demand per geographic area (density-based demand strength)
     """)
 
     with st.expander("📁 Upload RTO Data", expanded=True):
         uploaded_file = st.file_uploader("Upload vehicle registration data (CSV/Excel)",
                                          type=['csv', 'xlsx'],
-                                         help="Must include columns: office_name, registrations, class_type")
+                                         help="Must include columns: office_name, office_code, registrations, class_type")
 
         if uploaded_file:
             result = process_rto_data(uploaded_file, top_n=34)
             if result is not None:
                 st.success("✅ Processed successfully.")
-                st.dataframe(result[['City_Cluster', 'Total_Registrations', 'Volume_Score', 'Buying_Strength_Score', 'Demand_Density_per_1000_km2']])
+                st.dataframe(result[['City_Cluster', 'Total_Registrations', 'Volume_Score',
+                                     'Buying_Strength_Score', 'Demand_Density_per_1000_km2']])
 
-
-                # Plotly interactive chart
                 fig = go.Figure()
                 fig.add_trace(go.Bar(
                     y=result['City_Cluster'],
@@ -177,7 +124,6 @@ def main():
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Download
                 st.download_button(
                     label="📥 Download Results as CSV",
                     data=result.to_csv(index=False),
@@ -187,12 +133,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
 
