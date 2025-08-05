@@ -13,21 +13,21 @@ from datetime import datetime
 # Large states split into two clusters
 split_states = {'MH', 'UP', 'RJ', 'TN', 'KA'}
 
-def extract_state_code(office_name):
-    match = re.search(r'\b([A-Z]{2})\d{1,2}', str(office_name).upper())
+def extract_office_prefix(office_code):
+    match = re.match(r'([A-Z]{2})\d+', str(office_code).strip().upper())
     return match.group(1) if match else None
 
-
 def assign_state_cluster(row):
-    code = row['office_code']
+    code = row['state_code']
     if code in split_states:
-        office = str(row['office_name']).strip().upper()
-        # Use alphabetical split based on office name
-        if office < 'M':
-            return f"{code}_A"
-        else:
+        office = str(row['office_code']).strip().upper()
+        num_part = re.sub(r'[A-Z]', '', office)
+        if num_part.isdigit() and int(num_part) >= 50:
             return f"{code}_B"
+        else:
+            return f"{code}_A"
     return code
+
 
 
 # -------------------------
@@ -40,10 +40,39 @@ def process_rto_data(uploaded_file, top_n=34):
         else:
             df = pd.read_excel(uploaded_file)
 
-        required_cols = {'office_name', 'registrations', 'class_type'}
+        required_cols = {'office_name', 'office_code', 'registrations', 'class_type'}
         if not required_cols.issubset(set(df.columns)):
-            st.error("Uploaded file must contain 'office_name', 'registrations', and 'class_type' columns")
+            st.error("Uploaded file must contain 'office_name', 'office_code', 'registrations', and 'class_type' columns")
             return None
+
+        # Clean and filter class_type
+        df['class_type'] = df['class_type'].astype(str).str.strip().str.lower()
+        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'm-cycle/scooter'}
+        df = df[df['class_type'].isin(allowed_classes)]
+
+        # Extract state prefix from office_code
+        df['state_code'] = df['office_code'].apply(extract_office_prefix)
+
+        # Assign clusters
+        df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
+        df = df[df['City_Cluster'].notna()]
+
+        # Check if data is empty
+        if df.empty:
+            st.warning("Filtered dataset is empty. Please check class_type or office_code values.")
+            return None
+
+        # Group and score
+        cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
+        cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
+        cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
+
+        result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False).head(top_n)
+        return result
+
+    except Exception as e:
+        st.error(f"Error processing RTO data: {str(e)}")
+        return None
 
         # Clean and filter class_type
         df['class_type'] = df['class_type'].astype(str).str.strip().str.lower()
@@ -124,5 +153,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
