@@ -123,6 +123,24 @@ def main():
                     legend=dict(orientation="h", y=-0.2)
                 )
                 st.plotly_chart(fig, use_container_width=True)
+                                # Plot 2: Demand Density per 1000 km²
+                fig_density = go.Figure()
+                fig_density.add_trace(go.Bar(
+                    y=result['City_Cluster'],
+                    x=result['Demand_Density_per_1000_km2'],
+                    name='Demand Density',
+                    orientation='h',
+                    marker_color='darkorange'
+                ))
+                fig_density.update_layout(
+                    title='🌐 Demand Density per 1000 km² by State Cluster',
+                    xaxis_title='Demand Density Score (Registrations / 1000 km²)',
+                    yaxis_title='State Cluster',
+                    height=800,
+                    legend=dict(orientation="h", y=-0.2)
+                )
+                st.plotly_chart(fig_density, use_container_width=True)
+
 
                 st.download_button(
                     label="📥 Download Results as CSV",
@@ -133,4 +151,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
