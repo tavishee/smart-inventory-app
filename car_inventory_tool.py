@@ -10,6 +10,8 @@ from tensorflow.keras.layers import LSTM, Dense
 from prophet import Prophet
 import matplotlib.pyplot as plt
 import os
+import zipfile
+import io
 
 # -------------------------
 # Custom State-Based Clustering and Area Logic
@@ -89,7 +91,7 @@ def process_rto_data_for_strength(uploaded_file):
         return None
 
 # -------------------------
-# Feature 2: Forecasting Model Functions
+# Feature 2: Forecasting Model & Data Processing Functions
 # -------------------------
 def create_lstm_model(X_train):
     model = Sequential()
@@ -105,30 +107,40 @@ def prepare_lstm_data(data, time_step=12):
         y.append(data[i + time_step, 0])
     return np.array(X), np.array(y)
 
-def process_rto_data_for_forecasting(uploaded_files):
+def process_rto_data_from_zip(uploaded_zip_file):
     all_dfs = []
-    for file in uploaded_files:
-        try:
-            # Extract date from filename (e.g., "data_2023_04.csv")
-            match = re.search(r'(\d{4})_(\d{2})', os.path.basename(file.name))
-            if not match:
-                st.warning(f"Could not extract date from filename: {file.name}. Skipping file. Expected format YYYY_MM.")
-                continue
-            year, month = map(int, match.groups())
-            file_date = datetime(year, month, 1)
+    try:
+        with zipfile.ZipFile(uploaded_zip_file) as z:
+            for filename in z.namelist():
+                # Ignore macOS resource fork files and non-data files
+                if filename.startswith('__') or not (filename.endswith('.csv') or filename.endswith('.xlsx')):
+                    continue
+                
+                # Use a flexible regex to find YYYY-MM or YYYY_MM
+                match = re.search(r'(\d{4})[-_](\d{2})', filename)
+                if not match:
+                    st.warning(f"Could not extract date from filename: `{filename}`. Skipping file. Expected format `YYYY-MM` or `YYYY_MM`.")
+                    continue
+                
+                year, month = map(int, match.groups())
+                file_date = datetime(year, month, 1)
 
-            if file.name.endswith('.csv'):
-                df = pd.read_csv(file)
-            else:
-                df = pd.read_excel(file)
-
-            df['date'] = file_date
-            all_dfs.append(df)
-        except Exception as e:
-            st.error(f"Failed to process file {file.name}: {e}")
-            return None
+                with z.open(filename) as f:
+                    file_data = f.read()
+                    if filename.endswith('.csv'):
+                        df = pd.read_csv(io.BytesIO(file_data))
+                    else:
+                        df = pd.read_excel(io.BytesIO(file_data))
+                    
+                    df['date'] = file_date
+                    all_dfs.append(df)
+    
+    except Exception as e:
+        st.error(f"Failed to process the zip file: {e}")
+        return None
     
     if not all_dfs:
+        st.error("No valid data files were found inside the zip archive.")
         return None
 
     full_df = pd.concat(all_dfs, ignore_index=True)
@@ -156,27 +168,22 @@ def main():
 
     if feature_choice == "Buying Strength Analysis":
         st.title("🚗 Used Car Market - State-wise Buying Strength Analysis")
-        st.markdown("""
-        This tool ranks Indian states by **used car buying strength** using a single data file. It analyzes total registrations and demand density.
-        """)
+        st.markdown("This tool ranks Indian states by **used car buying strength** using a single data file. It analyzes total registrations and demand density.")
         
         with st.expander("📁 Upload RTO Data File", expanded=True):
-            uploaded_file = st.file_uploader("Upload a single vehicle registration data file (CSV/Excel)",
-                                             type=['csv', 'xlsx'],
-                                             help="Must include: office_name, office_code, registrations, class_type")
+            uploaded_file = st.file_uploader("Upload a single vehicle registration data file (CSV/Excel)", type=['csv', 'xlsx'])
             if uploaded_file:
                 result = process_rto_data_for_strength(uploaded_file)
                 if result is not None:
+                    # ... (rest of the buying strength UI code is unchanged)
                     st.success("✅ Processed successfully.")
                     st.dataframe(result)
 
-                    fig = go.Figure()
-                    fig.add_trace(go.Bar(y=result['City_Cluster'], x=result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue'))
+                    fig = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue')])
                     fig.update_layout(title='📊 Buying Strength Score by State Cluster', height=800)
                     st.plotly_chart(fig, use_container_width=True)
 
-                    fig_density = go.Figure()
-                    fig_density.add_trace(go.Bar(y=result['City_Cluster'], x=result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange'))
+                    fig_density = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange')])
                     fig_density.update_layout(title='🌐 Demand Density per 1000 km² by State Cluster', height=800)
                     st.plotly_chart(fig_density, use_container_width=True)
 
@@ -185,23 +192,20 @@ def main():
     elif feature_choice == "Demand Forecasting":
         st.title("📈 Monthly Demand Forecasting Tool")
         st.markdown("""
-        Forecast future RTO registrations using LSTM and Prophet models. This tool requires **monthly data files** (July 2019 - May 2024).
-        - **Filename format must be `prefix_YYYY_MM.csv`** (e.g., `rto_data_2024_05.csv`).
-        - It validates the models on May 2024 data and then forecasts for August 2025.
+        Forecast future RTO registrations using LSTM and Prophet models. This tool requires a **single ZIP file** containing all your monthly data files.
+        - **Filename format inside the ZIP must be `prefix_YYYY-MM.csv` or `prefix_YYYY_MM.xlsx`**.
+        - The tool validates models on May 2024 data and then forecasts for August 2025.
         """)
 
-        with st.expander("📁 Upload Monthly RTO Data Files", expanded=True):
-            uploaded_files = st.file_uploader("Upload all monthly data files (July 2019 - May 2024)",
-                                              type=['csv', 'xlsx'],
-                                              accept_multiple_files=True)
+        with st.expander("📁 Upload Monthly RTO Data ZIP File", expanded=True):
+            uploaded_zip_file = st.file_uploader("Upload a single ZIP file containing all monthly data", type=['zip'])
             
-            if uploaded_files:
-                df = process_rto_data_for_forecasting(uploaded_files)
+            if uploaded_zip_file:
+                df = process_rto_data_from_zip(uploaded_zip_file)
                 
                 if df is not None and not df.empty:
-                    st.success("✅ All files processed successfully.")
+                    st.success("✅ ZIP file processed successfully.")
                     
-                    # --- FORECASTING LOGIC STARTS HERE ---
                     all_clusters = sorted(df['City_Cluster'].unique())
                     selected_cluster = st.selectbox("Select a City/Cluster to Forecast:", all_clusters)
                     
@@ -217,10 +221,11 @@ def main():
                     may_actual = city_df[city_df.index == '2024-05-01']
 
                     if not may_actual.empty and len(train_df) > 12:
+                        # --- Run Forecasting Logic (this part remains the same) ---
                         actual_may_value = may_actual['registrations'].iloc[0]
                         time_step = 12
 
-                        # --- LSTM Forecasting for May ---
+                        # LSTM
                         scaler = MinMaxScaler(feature_range=(0, 1))
                         scaled_train_data = scaler.fit_transform(train_df)
                         last_12_months = scaled_train_data[-time_step:]
@@ -232,7 +237,7 @@ def main():
                         lstm_may_pred_scaled = lstm_model.predict(X_pred)
                         lstm_may_pred = scaler.inverse_transform(lstm_may_pred_scaled)[0][0]
 
-                        # --- Prophet Forecasting for May ---
+                        # Prophet
                         prophet_df = train_df.reset_index().rename(columns={'date': 'ds', 'registrations': 'y'})
                         prophet_model = Prophet()
                         prophet_model.fit(prophet_df)
@@ -240,7 +245,7 @@ def main():
                         prophet_may_forecast = prophet_model.predict(future_may)
                         prophet_may_pred = prophet_may_forecast[prophet_may_forecast['ds'] == '2024-05-01']['yhat'].iloc[0]
 
-                        # --- Display May Predictions and Comparison ---
+                        # UI Display for May comparison
                         col1, col2 = st.columns(2)
                         with col1:
                             st.write("#### LSTM Performance (May 2024)")
@@ -253,11 +258,11 @@ def main():
                             prophet_error = abs(prophet_may_pred - actual_may_value)
                             st.metric("Absolute Error", f"{int(prophet_error):,}")
 
-                        # --- August 2025 Forecasting ---
+                        # August 2025 Forecast
                         st.header(f"Final Forecast for August 2025 in {selected_cluster}")
+                        # ... (rest of the forecasting and display logic is unchanged)
                         months_to_forecast = (2025 - 2024) * 12 + (8 - 5)
-
-                        # --- Retrain models with full data up to May 2024 ---
+                        
                         full_df_ts = city_df.copy()
                         scaled_full_data = scaler.fit_transform(full_df_ts)
                         temp_input = list(scaled_full_data.flatten())
@@ -290,7 +295,6 @@ def main():
                             st.metric("Predicted Volume", f"{int(prophet_aug_pred):,}")
                             st.metric("Predicted Density / 1000 km²", f"{prophet_demand_density:.2f}")
                         
-                        # --- Visualization ---
                         fig, ax = plt.subplots()
                         ax.plot(city_df.index, city_df['registrations'], label='Historical Actual', marker='o', linestyle='-')
                         ax.axvline(x=pd.to_datetime('2024-05-01'), color='gray', linestyle='--', label='May Prediction Point')
@@ -302,9 +306,10 @@ def main():
                         st.pyplot(fig)
                     
                     else:
-                        st.warning("Not enough data to run forecast for the selected cluster. Need at least 13 months of data including a value for May 2024.")
+                        st.warning("Not enough data to run forecast for the selected cluster. Need at least 13 months of historical data and a valid value for May 2024.")
 
 if __name__ == "__main__":
     main()
+
 
 
