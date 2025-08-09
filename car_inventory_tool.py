@@ -117,4 +117,156 @@ def process_rto_data_from_zip(uploaded_zip_file):
                     st.warning(f"Could not parse date from: `{filename}`. Skipping.")
                     continue
                 year, month = map(int, match.groups())
-                with z.open(filenam
+                with z.open(filename) as f:
+                    file_data = f.read()
+                    df = pd.read_csv(io.BytesIO(file_data)) if filename.endswith('.csv') else pd.read_excel(io.BytesIO(file_data))
+                    df['date'] = datetime(year, month, 1)
+                    all_dfs.append(df)
+    except Exception as e:
+        st.error(f"Failed to process zip file: {e}")
+        return None
+    if not all_dfs:
+        st.error("No valid data files found in zip archive.")
+        return None
+    full_df = pd.concat(all_dfs, ignore_index=True)
+    full_df['state_code'] = full_df['office_code'].apply(extract_office_prefix)
+    full_df['City_Cluster'] = full_df.apply(assign_state_cluster, axis=1)
+    full_df = full_df.dropna(subset=['City_Cluster'])
+    return full_df.groupby(['date', 'City_Cluster'])['registrations'].sum().reset_index()
+
+# -------------------------
+# Main Streamlit UI
+# -------------------------
+def main():
+    st.set_page_config(layout="wide")
+    st.sidebar.title("🛠️ Analysis Tools")
+    feature_choice = st.sidebar.radio("Choose a feature:", ("Buying Strength Analysis", "Demand Forecasting"))
+
+    if feature_choice == "Buying Strength Analysis":
+        st.title("🚗 Used Car Market - State-wise Buying Strength Analysis")
+        st.markdown("This tool ranks states by buying strength using a single data file.")
+        uploaded_file = st.file_uploader("Upload a single vehicle registration data file (CSV/Excel)", type=['csv', 'xlsx'])
+        if uploaded_file:
+            result = process_rto_data_for_strength(uploaded_file)
+            if result is not None:
+                st.success("✅ Processed successfully.")
+                st.dataframe(result)
+                fig = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue')])
+                fig.update_layout(title='📊 Buying Strength Score by State Cluster', height=800)
+                st.plotly_chart(fig, use_container_width=True)
+                fig_density = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange')])
+                fig_density.update_layout(title='🌐 Demand Density per 1000 km² by State Cluster', height=800)
+                st.plotly_chart(fig_density, use_container_width=True)
+                st.download_button("📥 Download Results", result.to_csv(index=False), f"buying_strength.csv", 'text/csv')
+
+    elif feature_choice == "Demand Forecasting":
+        st.title("📈 Monthly Demand Forecasting Tool (Tuned LSTM vs. SARIMA)")
+        st.markdown("Forecast future demand using a Tuned LSTM and SARIMA. Requires a **single ZIP file** with monthly data (`prefix_YYYY-MM.csv`).")
+        uploaded_zip_file = st.file_uploader("Upload a single ZIP file", type=['zip'])
+        if uploaded_zip_file:
+            df = process_rto_data_from_zip(uploaded_zip_file)
+            if df is not None and not df.empty:
+                st.success("✅ ZIP file processed successfully.")
+                all_clusters = sorted(df['City_Cluster'].unique())
+                selected_cluster = st.selectbox("Select a City/Cluster to Forecast:", all_clusters)
+                city_df = df[df['City_Cluster'] == selected_cluster].set_index('date')[['registrations']].resample('MS').sum().sort_index()
+
+                st.write(f"### Historical Data for {selected_cluster}")
+                st.line_chart(city_df)
+
+                st.header(f"Forecast vs. Actual for May 2024")
+                train_df = city_df[city_df.index < '2024-05-01']
+                may_actual = city_df[city_df.index == '2024-05-01']
+
+                if not may_actual.empty and len(train_df) > 12:
+                    actual_may_value = may_actual['registrations'].iloc[0]
+                    time_step = 12
+                    
+                    # --- May 2024 Validation ---
+                    scaler = MinMaxScaler(feature_range=(0, 1))
+                    scaled_train = scaler.fit_transform(train_df)
+                    X_train, y_train = prepare_lstm_data(scaled_train, time_step)
+                    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+                    
+                    with st.spinner("Fitting Tuned LSTM for May validation..."):
+                        # USING THE TUNED LSTM MODEL
+                        lstm_model = create_tuned_lstm_model(X_train)
+                        lstm_model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
+                        lstm_may_pred = scaler.inverse_transform(lstm_model.predict(scaled_train[-time_step:].reshape(1, time_step, 1), verbose=0))[0][0]
+
+                    with st.spinner("Fitting SARIMA for May validation..."):
+                        # Using original SARIMA as requested
+                        sarima_order = (1, 1, 1)
+                        seasonal_order = (1, 1, 1, 12)
+                        sarima_model = SARIMAX(train_df['registrations'], order=sarima_order, seasonal_order=seasonal_order, enforce_stationarity=False, enforce_invertibility=False)
+                        sarima_fit = sarima_model.fit(disp=False)
+                        sarima_may_pred = sarima_fit.predict(start=len(train_df), end=len(train_df), dynamic=False).iloc[0]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("#### Tuned LSTM Performance (May 2024)")
+                        st.metric("Predicted", f"{int(lstm_may_pred):,}", f"Actual: {int(actual_may_value):,}")
+                        st.metric("Absolute Error", f"{abs(lstm_may_pred - actual_may_value):,.0f}")
+                    with col2:
+                        st.write("#### SARIMA Performance (May 2024)")
+                        st.metric("Predicted", f"{int(sarima_may_pred):,}", f"Actual: {int(actual_may_value):,}")
+                        st.metric("Absolute Error", f"{abs(sarima_may_pred - actual_may_value):,.0f}")
+
+                    # --- August 2025 Forecasting ---
+                    st.header(f"Final Forecast for August 2025")
+                    months_to_forecast = (datetime(2025, 8, 1) - city_df.index.max()).days // 30
+                    full_df_ts = city_df.copy()
+
+                    # 1. Retrain and Forecast with TUNED LSTM
+                    with st.spinner("Retraining & forecasting with Tuned LSTM..."):
+                        scaled_full = scaler.fit_transform(full_df_ts)
+                        X_full, y_full = prepare_lstm_data(scaled_full, time_step)
+                        if len(X_full) > 0:
+                            X_full = X_full.reshape(X_full.shape[0], X_full.shape[1], 1)
+                            # USING THE TUNED LSTM MODEL
+                            lstm_full_model = create_tuned_lstm_model(X_full)
+                            lstm_full_model.fit(X_full, y_full, epochs=50, batch_size=32, verbose=0)
+                            temp_input = list(scaled_full[-time_step:].flatten())
+                            lstm_output = []
+                            for _ in range(months_to_forecast):
+                                yhat = lstm_full_model.predict(np.array(temp_input[-time_step:]).reshape(1, time_step, 1), verbose=0)
+                                temp_input.append(yhat[0,0])
+                                lstm_output.append(yhat[0,0])
+                            lstm_aug_pred = scaler.inverse_transform(np.array([[lstm_output[-1]]]))[0][0]
+                        else:
+                            lstm_aug_pred = 0
+
+                    # 2. Retrain and Forecast with ORIGINAL SARIMA
+                    with st.spinner("Retraining & forecasting with SARIMA..."):
+                        sarima_model_full = SARIMAX(full_df_ts['registrations'], order=sarima_order, seasonal_order=seasonal_order, enforce_stationarity=False, enforce_invertibility=False)
+                        sarima_fit_full = sarima_model_full.fit(disp=False)
+                        sarima_aug_pred = sarima_fit_full.get_forecast(steps=months_to_forecast).predicted_mean.iloc[-1]
+                    
+                    # --- Display Final Forecasts ---
+                    cluster_area = get_cluster_area(selected_cluster)
+                    col3, col4 = st.columns(2)
+                    with col3:
+                        st.write("#### Tuned LSTM Forecast (August 2025)")
+                        st.metric("Predicted Volume", f"{int(lstm_aug_pred):,}")
+                        st.metric("Predicted Density / 1000 km²", f"{(lstm_aug_pred / cluster_area) * 1000:.2f}" if cluster_area > 0 else "N/A")
+                    with col4:
+                        st.write("#### SARIMA Forecast (August 2025)")
+                        st.metric("Predicted Volume", f"{int(sarima_aug_pred):,}")
+                        st.metric("Predicted Density / 1000 km²", f"{(sarima_aug_pred / cluster_area) * 1000:.2f}" if cluster_area > 0 else "N/A")
+
+                    # --- Visualization ---
+                    st.subheader("Visual Comparison of May 2024 Validation")
+                    fig, ax = plt.subplots()
+                    ax.plot(city_df.index, city_df['registrations'], label='Historical', marker='o', linestyle='-')
+                    ax.axvline(x=pd.to_datetime('2024-05-01'), color='gray', linestyle='--')
+                    ax.scatter(pd.to_datetime('2024-05-01'), lstm_may_pred, color='red', s=100, zorder=5, label=f'Tuned LSTM: {int(lstm_may_pred):,}')
+                    ax.scatter(pd.to_datetime('2024-05-01'), sarima_may_pred, color='purple', s=100, zorder=5, label=f'SARIMA: {int(sarima_may_pred):,}')
+                    ax.scatter(pd.to_datetime('2024-05-01'), actual_may_value, color='blue', s=100, zorder=5, label=f'Actual: {int(actual_may_value):,}')
+                    plt.title(f'May 2024 Validation for {selected_cluster}')
+                    plt.legend(); plt.grid(True)
+                    st.pyplot(fig)
+                else:
+                    st.warning("Not enough data to run forecast. Requires >12 months of data and a valid value for May 2024.")
+
+if __name__ == "__main__":
+    main()
