@@ -8,7 +8,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.model_selection import TimeSeriesSplit # Import for CV
+from sklearn.model_selection import TimeSeriesSplit
 import matplotlib.pyplot as plt
 import os
 import zipfile
@@ -128,38 +128,23 @@ def process_rto_data_from_zip(uploaded_zip_file):
     full_df = full_df.dropna(subset=['City_Cluster'])
     return full_df.groupby(['date', 'City_Cluster'])['registrations'].sum().reset_index()
 
-# NEW FUNCTION FOR CROSS-VALIDATION
-def perform_time_series_cv(data, model_name, n_splits=4, time_step=12):
-    st.write(f"--- Running {n_splits}-Fold Cross-Validation for {model_name} ---")
+def perform_lstm_cv(data, n_splits=4, time_step=12):
     tscv = TimeSeriesSplit(n_splits=n_splits)
     errors = []
-    progress_bar = st.progress(0)
-    for i, (train_index, test_index) in enumerate(tscv.split(data)):
+    for train_index, test_index in tscv.split(data):
         cv_train, cv_test = data.iloc[train_index], data.iloc[test_index]
         actual_value = cv_test['registrations'].iloc[0]
-        prediction = None
-
-        if model_name == 'LSTM':
-            scaler = MinMaxScaler(feature_range=(0, 1))
-            scaled_train = scaler.fit_transform(cv_train[['registrations']])
-            if len(scaled_train) <= time_step: continue
-            X_train, y_train = prepare_lstm_data(scaled_train, time_step)
-            if X_train.size == 0: continue
-            X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-            lstm_model = create_tuned_lstm_model(X_train)
-            lstm_model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
-            pred_scaled = lstm_model.predict(scaled_train[-time_step:].reshape(1, time_step, 1), verbose=0)
-            prediction = scaler.inverse_transform(pred_scaled)[0][0]
-        elif model_name == 'SARIMA':
-            sarima_order = (1, 1, 1)
-            seasonal_order = (1, 1, 1, 12)
-            model = SARIMAX(cv_train['registrations'], order=sarima_order, seasonal_order=seasonal_order).fit(disp=False)
-            prediction = model.predict(start=len(cv_train), end=len(cv_train)).iloc[0]
-            
-        if prediction is not None:
-            errors.append(abs(actual_value - prediction))
-        progress_bar.progress((i + 1) / n_splits)
-    progress_bar.empty()
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        scaled_train = scaler.fit_transform(cv_train[['registrations']])
+        if len(scaled_train) <= time_step: continue
+        X_train, y_train = prepare_lstm_data(scaled_train, time_step)
+        if X_train.size == 0: continue
+        X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+        lstm_model = create_tuned_lstm_model(X_train)
+        lstm_model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
+        pred_scaled = lstm_model.predict(scaled_train[-time_step:].reshape(1, time_step, 1), verbose=0)
+        prediction = scaler.inverse_transform(pred_scaled)[0][0]
+        errors.append(abs(actual_value - prediction))
     return np.mean(errors) if errors else float('inf')
 
 # -------------------------
@@ -188,9 +173,9 @@ def main():
                 st.download_button("📥 Download Results", result.to_csv(index=False), f"buying_strength.csv", 'text/csv')
 
     elif feature_choice == "Demand Forecasting":
-        st.title("📈 Monthly Demand Forecasting Tool (Tuned LSTM vs. SARIMA)")
-        st.markdown("Forecast future demand using a Tuned LSTM and SARIMA. Requires a **single ZIP file** with monthly data (`prefix_YYYY-MM.csv`).")
-        uploaded_zip_file = st.file_uploader("Upload a single ZIP file", type=['zip'])
+        st.title("📈 Monthly Demand Forecasting Tool")
+        st.markdown("This tool evaluates Tuned LSTM and SARIMA models to provide the single best forecast.")
+        uploaded_zip_file = st.file_uploader("Upload a single ZIP file with monthly data (`prefix_YYYY-MM.csv`)", type=['zip'])
         if uploaded_zip_file:
             df = process_rto_data_from_zip(uploaded_zip_file)
             if df is not None and not df.empty:
@@ -202,106 +187,66 @@ def main():
                 st.write(f"### Historical Data for {selected_cluster}")
                 st.line_chart(city_df)
 
-                # --- NEW CROSS-VALIDATION UI SECTION ---
-                st.markdown("---")
-                st.subheader("Optional: Robust Model Evaluation")
-                if st.button("Run Time Series Cross-Validation (Slower)"):
-                    lstm_avg_error = perform_time_series_cv(city_df, 'LSTM')
-                    sarima_avg_error = perform_time_series_cv(city_df, 'SARIMA')
-                    st.header("Cross-Validation Results (Average Error)")
-                    st.metric("Tuned LSTM Average Error", f"{lstm_avg_error:,.2f}")
-                    st.metric("SARIMA Average Error", f"{sarima_avg_error:,.2f}")
-                    st.success(f"🏆 Conclusion: **{'Tuned LSTM' if lstm_avg_error < sarima_avg_error else 'SARIMA'}** is more consistently accurate for this city's historical data.")
-                st.markdown("---")
-
-
-                st.header(f"Forecast vs. Actual for May 2024")
                 train_df = city_df[city_df.index < '2024-05-01']
                 may_actual = city_df[city_df.index == '2024-05-01']
 
                 if not may_actual.empty and len(train_df) > 12:
                     actual_may_value = may_actual['registrations'].iloc[0]
-                    time_step = 12
                     
-                    scaler = MinMaxScaler(feature_range=(0, 1))
-                    scaled_train = scaler.fit_transform(train_df)
-                    X_train, y_train = prepare_lstm_data(scaled_train, time_step)
-                    
-                    if X_train.size == 0:
-                        st.error(f"Not enough training data for {selected_cluster} to build LSTM model. Skipping.")
-                        return
-
-                    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-                    
-                    with st.spinner("Fitting Tuned LSTM for May validation..."):
-                        lstm_model = create_tuned_lstm_model(X_train)
-                        lstm_model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
-                        lstm_may_pred = scaler.inverse_transform(lstm_model.predict(scaled_train[-time_step:].reshape(1, time_step, 1), verbose=0))[0][0]
-
-                    with st.spinner("Fitting SARIMA for May validation..."):
+                    # --- Model Evaluation Stage ---
+                    with st.spinner("Evaluating models to find the best one... This may take a moment."):
+                        # 1. Evaluate LSTM using robust Cross-Validation
+                        lstm_cv_error = perform_lstm_cv(train_df)
+                        
+                        # 2. Evaluate SARIMA on the single May 2024 point
                         sarima_order = (1, 1, 1)
                         seasonal_order = (1, 1, 1, 12)
-                        sarima_model = SARIMAX(train_df['registrations'], order=sarima_order, seasonal_order=seasonal_order, enforce_stationarity=False, enforce_invertibility=False)
-                        sarima_fit = sarima_model.fit(disp=False)
-                        sarima_may_pred = sarima_fit.predict(start=len(train_df), end=len(train_df), dynamic=False).iloc[0]
+                        sarima_model = SARIMAX(train_df['registrations'], order=sarima_order, seasonal_order=seasonal_order).fit(disp=False)
+                        sarima_may_pred = sarima_model.predict(start=len(train_df), end=len(train_df)).iloc[0]
+                        sarima_may_error = abs(sarima_may_pred - actual_may_value)
 
+                    # --- Display Evaluation Results and Winner ---
+                    st.subheader("Model Evaluation Result")
                     col1, col2 = st.columns(2)
-                    with col1:
-                        st.write("#### Tuned LSTM Performance (May 2024)")
-                        st.metric("Predicted", f"{int(lstm_may_pred):,}", f"Actual: {int(actual_may_value):,}")
-                        st.metric("Absolute Error", f"{abs(lstm_may_pred - actual_may_value):,.0f}")
-                    with col2:
-                        st.write("#### SARIMA Performance (May 2024)")
-                        st.metric("Predicted", f"{int(sarima_may_pred):,}", f"Actual: {int(actual_may_value):,}")
-                        st.metric("Absolute Error", f"{abs(sarima_may_pred - actual_may_value):,.0f}")
-
-                    st.header(f"Final Forecast for August 2025")
-                    months_to_forecast = (datetime(2025, 8, 1) - city_df.index.max()).days // 30
-                    full_df_ts = city_df.copy()
-
-                    with st.spinner("Retraining & forecasting with Tuned LSTM..."):
-                        scaled_full = scaler.fit_transform(full_df_ts)
-                        X_full, y_full = prepare_lstm_data(scaled_full, time_step)
-                        if len(X_full) > 0:
-                            X_full = X_full.reshape(X_full.shape[0], X_full.shape[1], 1)
-                            lstm_full_model = create_tuned_lstm_model(X_full)
-                            lstm_full_model.fit(X_full, y_full, epochs=50, batch_size=32, verbose=0)
-                            temp_input = list(scaled_full[-time_step:].flatten())
-                            lstm_output = []
-                            for _ in range(months_to_forecast):
-                                yhat = lstm_full_model.predict(np.array(temp_input[-time_step:]).reshape(1, time_step, 1), verbose=0)
-                                temp_input.append(yhat[0,0])
-                                lstm_output.append(yhat[0,0])
-                            lstm_aug_pred = scaler.inverse_transform(np.array([[lstm_output[-1]]]))[0][0]
-                        else:
-                            lstm_aug_pred = 0
-
-                    with st.spinner("Retraining & forecasting with SARIMA..."):
-                        sarima_model_full = SARIMAX(full_df_ts['registrations'], order=sarima_order, seasonal_order=seasonal_order, enforce_stationarity=False, enforce_invertibility=False)
-                        sarima_fit_full = sarima_model_full.fit(disp=False)
-                        sarima_aug_pred = sarima_fit_full.get_forecast(steps=months_to_forecast).predicted_mean.iloc[-1]
+                    col1.metric("Tuned LSTM Average CV Error", f"{lstm_cv_error:,.0f}")
+                    col2.metric("SARIMA May 2024 Absolute Error", f"{sarima_may_error:,.0f}")
                     
+                    winner = "Tuned LSTM" if lstm_cv_error < sarima_may_error else "SARIMA"
+                    st.success(f"🏆 Best Performing Model: **{winner}**")
+                    st.markdown("---")
+                    
+                    # --- Final Forecast using ONLY the winning model ---
+                    st.header(f"Final Forecast for August 2025 (using {winner})")
+                    final_forecast_volume = 0
+                    
+                    with st.spinner(f"Retraining {winner} on full data and forecasting..."):
+                        if winner == "Tuned LSTM":
+                            time_step = 12
+                            scaler = MinMaxScaler(feature_range=(0, 1))
+                            scaled_full = scaler.fit_transform(city_df)
+                            X_full, y_full = prepare_lstm_data(scaled_full, time_step)
+                            if len(X_full) > 0:
+                                X_full = X_full.reshape(X_full.shape[0], X_full.shape[1], 1)
+                                lstm_full_model = create_tuned_lstm_model(X_full)
+                                lstm_full_model.fit(X_full, y_full, epochs=50, batch_size=32, verbose=0)
+                                temp_input = list(scaled_full[-time_step:].flatten())
+                                lstm_output = []
+                                months_to_forecast = (datetime(2025, 8, 1) - city_df.index.max()).days // 30
+                                for _ in range(months_to_forecast):
+                                    yhat = lstm_full_model.predict(np.array(temp_input[-time_step:]).reshape(1, time_step, 1), verbose=0)
+                                    temp_input.append(yhat[0,0])
+                                    lstm_output.append(yhat[0,0])
+                                final_forecast_volume = scaler.inverse_transform(np.array([[lstm_output[-1]]]))[0][0]
+                        else: # SARIMA is the winner
+                            sarima_model_full = SARIMAX(city_df['registrations'], order=sarima_order, seasonal_order=seasonal_order).fit(disp=False)
+                            months_to_forecast = (datetime(2025, 8, 1) - city_df.index.max()).days // 30
+                            final_forecast_volume = sarima_model_full.get_forecast(steps=months_to_forecast).predicted_mean.iloc[-1]
+                    
+                    # --- Display the Single Best Forecast ---
                     cluster_area = get_cluster_area(selected_cluster)
-                    col3, col4 = st.columns(2)
-                    with col3:
-                        st.write("#### Tuned LSTM Forecast (August 2025)")
-                        st.metric("Predicted Volume", f"{int(lstm_aug_pred):,}")
-                        st.metric("Predicted Density / 1000 km²", f"{(lstm_aug_pred / cluster_area) * 1000:.2f}" if cluster_area > 0 else "N/A")
-                    with col4:
-                        st.write("#### SARIMA Forecast (August 2025)")
-                        st.metric("Predicted Volume", f"{int(sarima_aug_pred):,}")
-                        st.metric("Predicted Density / 1000 km²", f"{(sarima_aug_pred / cluster_area) * 1000:.2f}" if cluster_area > 0 else "N/A")
+                    st.metric("Predicted Volume (August 2025)", f"{int(final_forecast_volume):,}")
+                    st.metric("Predicted Density / 1000 km²", f"{(final_forecast_volume / cluster_area) * 1000:.2f}" if cluster_area > 0 else "N/A")
 
-                    st.subheader("Visual Comparison of May 2024 Validation")
-                    fig, ax = plt.subplots()
-                    ax.plot(city_df.index, city_df['registrations'], label='Historical', marker='o', linestyle='-')
-                    ax.axvline(x=pd.to_datetime('2024-05-01'), color='gray', linestyle='--')
-                    ax.scatter(pd.to_datetime('2024-05-01'), lstm_may_pred, color='red', s=100, zorder=5, label=f'Tuned LSTM: {int(lstm_may_pred):,}')
-                    ax.scatter(pd.to_datetime('2024-05-01'), sarima_may_pred, color='purple', s=100, zorder=5, label=f'SARIMA: {int(sarima_may_pred):,}')
-                    ax.scatter(pd.to_datetime('2024-05-01'), actual_may_value, color='blue', s=100, zorder=5, label=f'Actual: {int(actual_may_value):,}')
-                    plt.title(f'May 2024 Validation for {selected_cluster}')
-                    plt.legend(); plt.grid(True)
-                    st.pyplot(fig)
                 else:
                     st.warning("Not enough data to run forecast. Requires >12 months of data and a valid value for May 2024.")
 
