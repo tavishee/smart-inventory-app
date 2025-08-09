@@ -7,7 +7,7 @@ from datetime import datetime
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
-from prophet import Prophet
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 import matplotlib.pyplot as plt
 import os
 import zipfile
@@ -112,14 +112,12 @@ def process_rto_data_from_zip(uploaded_zip_file):
     try:
         with zipfile.ZipFile(uploaded_zip_file) as z:
             for filename in z.namelist():
-                # Ignore macOS resource fork files and non-data files
                 if filename.startswith('__') or not (filename.endswith('.csv') or filename.endswith('.xlsx')):
                     continue
                 
-                # Use a flexible regex to find YYYY-MM or YYYY_MM
                 match = re.search(r'(\d{4})[-_](\d{2})', filename)
                 if not match:
-                    st.warning(f"Could not extract date from filename: `{filename}`. Skipping file. Expected format `YYYY-MM` or `YYYY_MM`.")
+                    st.warning(f"Could not extract date from filename: `{filename}`. Skipping. Expected `YYYY-MM` or `YYYY_MM`.")
                     continue
                 
                 year, month = map(int, match.groups())
@@ -145,12 +143,10 @@ def process_rto_data_from_zip(uploaded_zip_file):
 
     full_df = pd.concat(all_dfs, ignore_index=True)
     
-    # Apply clustering logic
     full_df['state_code'] = full_df['office_code'].apply(extract_office_prefix)
     full_df['City_Cluster'] = full_df.apply(assign_state_cluster, axis=1)
     full_df = full_df[full_df['City_Cluster'].notna()]
 
-    # Aggregate to monthly registrations per cluster
     time_series_df = full_df.groupby(['date', 'City_Cluster'])['registrations'].sum().reset_index()
     return time_series_df
 
@@ -175,7 +171,6 @@ def main():
             if uploaded_file:
                 result = process_rto_data_for_strength(uploaded_file)
                 if result is not None:
-                    # ... (rest of the buying strength UI code is unchanged)
                     st.success("✅ Processed successfully.")
                     st.dataframe(result)
 
@@ -190,11 +185,12 @@ def main():
                     st.download_button("📥 Download Results as CSV", result.to_csv(index=False), f"buying_strength_{datetime.now().strftime('%Y%m%d')}.csv", 'text/csv')
 
     elif feature_choice == "Demand Forecasting":
-        st.title("📈 Monthly Demand Forecasting Tool")
+        st.title("📈 Monthly Demand Forecasting Tool (LSTM vs. SARIMA)")
         st.markdown("""
-        Forecast future RTO registrations using LSTM and Prophet models. This tool requires a **single ZIP file** containing all your monthly data files.
+        Forecast future RTO registrations using LSTM and **SARIMA** (Seasonal AutoRegressive Integrated Moving Average).
+        - This tool requires a **single ZIP file** containing all your monthly data files.
         - **Filename format inside the ZIP must be `prefix_YYYY-MM.csv` or `prefix_YYYY_MM.xlsx`**.
-        - The tool validates models on May 2024 data and then forecasts for August 2025.
+        - It validates models on May 2024 data and then forecasts for August 2025.
         """)
 
         with st.expander("📁 Upload Monthly RTO Data ZIP File", expanded=True):
@@ -221,11 +217,10 @@ def main():
                     may_actual = city_df[city_df.index == '2024-05-01']
 
                     if not may_actual.empty and len(train_df) > 12:
-                        # --- Run Forecasting Logic (this part remains the same) ---
                         actual_may_value = may_actual['registrations'].iloc[0]
                         time_step = 12
 
-                        # LSTM
+                        # --- LSTM Forecasting for May ---
                         scaler = MinMaxScaler(feature_range=(0, 1))
                         scaled_train_data = scaler.fit_transform(train_df)
                         last_12_months = scaled_train_data[-time_step:]
@@ -237,15 +232,15 @@ def main():
                         lstm_may_pred_scaled = lstm_model.predict(X_pred)
                         lstm_may_pred = scaler.inverse_transform(lstm_may_pred_scaled)[0][0]
 
-                        # Prophet
-                        prophet_df = train_df.reset_index().rename(columns={'date': 'ds', 'registrations': 'y'})
-                        prophet_model = Prophet()
-                        prophet_model.fit(prophet_df)
-                        future_may = prophet_model.make_future_dataframe(periods=1, freq='MS')
-                        prophet_may_forecast = prophet_model.predict(future_may)
-                        prophet_may_pred = prophet_may_forecast[prophet_may_forecast['ds'] == '2024-05-01']['yhat'].iloc[0]
-
-                        # UI Display for May comparison
+                        # --- SARIMA Forecasting for May ---
+                        with st.spinner("Fitting SARIMA model... This may take a moment."):
+                            sarima_order = (1, 1, 1)
+                            seasonal_order = (1, 1, 1, 12) # m=12 for monthly data
+                            sarima_model = SARIMAX(train_df['registrations'], order=sarima_order, seasonal_order=seasonal_order, enforce_stationarity=False, enforce_invertibility=False)
+                            sarima_fit = sarima_model.fit(disp=False)
+                            sarima_may_pred = sarima_fit.predict(start=len(train_df), end=len(train_df), dynamic=False).iloc[0]
+                        
+                        # --- Display May Predictions and Comparison ---
                         col1, col2 = st.columns(2)
                         with col1:
                             st.write("#### LSTM Performance (May 2024)")
@@ -253,17 +248,18 @@ def main():
                             lstm_error = abs(lstm_may_pred - actual_may_value)
                             st.metric("Absolute Error", f"{int(lstm_error):,}")
                         with col2:
-                            st.write("#### Prophet Performance (May 2024)")
-                            st.metric("Predicted", f"{int(prophet_may_pred):,}", f"Actual: {int(actual_may_value):,}")
-                            prophet_error = abs(prophet_may_pred - actual_may_value)
-                            st.metric("Absolute Error", f"{int(prophet_error):,}")
+                            st.write("#### SARIMA Performance (May 2024)")
+                            st.metric("Predicted", f"{int(sarima_may_pred):,}", f"Actual: {int(actual_may_value):,}")
+                            sarima_error = abs(sarima_may_pred - actual_may_value)
+                            st.metric("Absolute Error", f"{int(sarima_error):,}")
 
-                        # August 2025 Forecast
+                        # --- August 2025 Forecasting ---
                         st.header(f"Final Forecast for August 2025 in {selected_cluster}")
-                        # ... (rest of the forecasting and display logic is unchanged)
                         months_to_forecast = (2025 - 2024) * 12 + (8 - 5)
                         
                         full_df_ts = city_df.copy()
+
+                        # LSTM Forecast
                         scaled_full_data = scaler.fit_transform(full_df_ts)
                         temp_input = list(scaled_full_data.flatten())
                         lstm_output = []
@@ -274,16 +270,17 @@ def main():
                             lstm_output.append(yhat[0,0])
                         lstm_aug_pred = scaler.inverse_transform(np.array([[lstm_output[-1]]]))[0][0]
 
-                        prophet_df_full = full_df_ts.reset_index().rename(columns={'date': 'ds', 'registrations': 'y'})
-                        prophet_model_full = Prophet()
-                        prophet_model_full.fit(prophet_df_full)
-                        future_aug = prophet_model_full.make_future_dataframe(periods=months_to_forecast, freq='MS')
-                        prophet_aug_forecast = prophet_model_full.predict(future_aug)
-                        prophet_aug_pred = prophet_aug_forecast[prophet_aug_forecast['ds'] == '2025-08-01']['yhat'].iloc[0]
+                        # Retrain SARIMA and forecast
+                        with st.spinner("Retraining SARIMA and forecasting for August 2025..."):
+                            sarima_model_full = SARIMAX(full_df_ts['registrations'], order=sarima_order, seasonal_order=seasonal_order, enforce_stationarity=False, enforce_invertibility=False)
+                            sarima_fit_full = sarima_model_full.fit(disp=False)
+                            forecast_results = sarima_fit_full.get_forecast(steps=months_to_forecast)
+                            sarima_aug_pred = forecast_results.predicted_mean.iloc[-1]
 
+                        # Display Final Forecasts
                         cluster_area = get_cluster_area(selected_cluster)
                         lstm_demand_density = (lstm_aug_pred / cluster_area) * 1000 if cluster_area > 0 else 0
-                        prophet_demand_density = (prophet_aug_pred / cluster_area) * 1000 if cluster_area > 0 else 0
+                        sarima_demand_density = (sarima_aug_pred / cluster_area) * 1000 if cluster_area > 0 else 0
 
                         col3, col4 = st.columns(2)
                         with col3:
@@ -291,25 +288,23 @@ def main():
                             st.metric("Predicted Volume", f"{int(lstm_aug_pred):,}")
                             st.metric("Predicted Density / 1000 km²", f"{lstm_demand_density:.2f}")
                         with col4:
-                            st.write("#### Prophet Forecast (August 2025)")
-                            st.metric("Predicted Volume", f"{int(prophet_aug_pred):,}")
-                            st.metric("Predicted Density / 1000 km²", f"{prophet_demand_density:.2f}")
+                            st.write("#### SARIMA Forecast (August 2025)")
+                            st.metric("Predicted Volume", f"{int(sarima_aug_pred):,}")
+                            st.metric("Predicted Density / 1000 km²", f"{sarima_demand_density:.2f}")
                         
+                        # --- Visualization ---
                         fig, ax = plt.subplots()
                         ax.plot(city_df.index, city_df['registrations'], label='Historical Actual', marker='o', linestyle='-')
                         ax.axvline(x=pd.to_datetime('2024-05-01'), color='gray', linestyle='--', label='May Prediction Point')
                         ax.scatter(pd.to_datetime('2024-05-01'), lstm_may_pred, color='red', s=100, zorder=5, label=f'LSTM Pred: {int(lstm_may_pred):,}')
-                        ax.scatter(pd.to_datetime('2024-05-01'), prophet_may_pred, color='green', s=100, zorder=5, label=f'Prophet Pred: {int(prophet_may_pred):,}')
+                        ax.scatter(pd.to_datetime('2024-05-01'), sarima_may_pred, color='purple', s=100, zorder=5, label=f'SARIMA Pred: {int(sarima_may_pred):,}')
                         ax.scatter(pd.to_datetime('2024-05-01'), actual_may_value, color='blue', s=100, zorder=5, label=f'Actual: {int(actual_may_value):,}')
                         plt.title(f'May 2024: Actual vs. Predicted for {selected_cluster}')
                         plt.legend(); plt.grid(True)
                         st.pyplot(fig)
                     
                     else:
-                        st.warning("Not enough data to run forecast for the selected cluster. Need at least 13 months of historical data and a valid value for May 2024.")
+                        st.warning("Not enough data to run forecast. Need at least 13 months of historical data and a valid value for May 2024.")
 
 if __name__ == "__main__":
     main()
-
-
-
