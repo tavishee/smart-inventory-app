@@ -128,10 +128,13 @@ def process_rto_data_from_zip(uploaded_zip_file):
     full_df = full_df.dropna(subset=['City_Cluster'])
     return full_df.groupby(['date', 'City_Cluster'])['registrations'].sum().reset_index()
 
+# THIS FUNCTION IS NOW ONLY FOR LSTM
 def perform_lstm_cv(data, n_splits=4, time_step=12):
+    st.write(f"--- Running {n_splits}-Fold Cross-Validation for Tuned LSTM ---")
     tscv = TimeSeriesSplit(n_splits=n_splits)
     errors = []
-    for train_index, test_index in tscv.split(data):
+    progress_bar = st.progress(0)
+    for i, (train_index, test_index) in enumerate(tscv.split(data)):
         cv_train, cv_test = data.iloc[train_index], data.iloc[test_index]
         actual_value = cv_test['registrations'].iloc[0]
         scaler = MinMaxScaler(feature_range=(0, 1))
@@ -141,3 +144,138 @@ def perform_lstm_cv(data, n_splits=4, time_step=12):
         if X_train.size == 0: continue
         X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
         lstm_model = create_tuned_lstm_model(X_train)
+        lstm_model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
+        pred_scaled = lstm_model.predict(scaled_train[-time_step:].reshape(1, time_step, 1), verbose=0)
+        prediction = scaler.inverse_transform(pred_scaled)[0][0]
+        errors.append(abs(actual_value - prediction))
+        progress_bar.progress((i + 1) / n_splits)
+    progress_bar.empty()
+    return np.mean(errors) if errors else float('inf')
+
+# -------------------------
+# Main Streamlit UI
+# -------------------------
+def main():
+    st.set_page_config(layout="wide")
+    st.sidebar.title("🛠️ Analysis Tools")
+    feature_choice = st.sidebar.radio("Choose a feature:", ("Buying Strength Analysis", "Demand Forecasting"))
+
+    if feature_choice == "Buying Strength Analysis":
+        st.title("🚗 Used Car Market - State-wise Buying Strength Analysis")
+        st.markdown("This tool ranks states by buying strength using a single data file.")
+        uploaded_file = st.file_uploader("Upload a single vehicle registration data file (CSV/Excel)", type=['csv', 'xlsx'])
+        if uploaded_file:
+            result = process_rto_data_for_strength(uploaded_file)
+            if result is not None:
+                st.success("✅ Processed successfully.")
+                st.dataframe(result)
+                fig = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue')])
+                fig.update_layout(title='📊 Buying Strength Score by State Cluster', height=800)
+                st.plotly_chart(fig, use_container_width=True)
+                fig_density = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange')])
+                fig_density.update_layout(title='🌐 Demand Density per 1000 km² by State Cluster', height=800)
+                st.plotly_chart(fig_density, use_container_width=True)
+                st.download_button("📥 Download Results", result.to_csv(index=False), f"buying_strength.csv", 'text/csv')
+
+    elif feature_choice == "Demand Forecasting":
+        st.title("📈 Monthly Demand Forecasting Tool (Tuned LSTM vs. SARIMA)")
+        st.markdown("This tool evaluates models to find the single best forecast for August 2025.")
+        uploaded_zip_file = st.file_uploader("Upload a single ZIP file with monthly data (`prefix_YYYY-MM.csv`)", type=['zip'])
+        if uploaded_zip_file:
+            df = process_rto_data_from_zip(uploaded_zip_file)
+            if df is not None and not df.empty:
+                st.success("✅ ZIP file processed successfully.")
+                all_clusters = sorted(df['City_Cluster'].unique())
+                selected_cluster = st.selectbox("Select a City/Cluster to Forecast:", all_clusters)
+                city_df = df[df['City_Cluster'] == selected_cluster].set_index('date')[['registrations']].resample('MS').sum().sort_index()
+
+                st.write(f"### Historical Data for {selected_cluster}")
+                st.line_chart(city_df)
+
+                train_df = city_df[city_df.index < '2024-05-01']
+                may_actual = city_df[city_df.index == '2024-05-01']
+
+                if not may_actual.empty and len(train_df) > 12:
+                    actual_may_value = may_actual['registrations'].iloc[0]
+                    
+                    # --- Model Evaluation Stage ---
+                    st.header("Model Evaluation")
+                    # These variables will hold the results
+                    lstm_combined_error = float('inf')
+                    sarima_may_error = float('inf')
+                    
+                    with st.spinner("Running robust evaluation for all models... This may take a moment."):
+                        # 1. Get LSTM's simple error on May 2024
+                        scaler = MinMaxScaler(feature_range=(0, 1))
+                        scaled_train = scaler.fit_transform(train_df)
+                        X_train, y_train = prepare_lstm_data(scaled_train, 12)
+                        
+                        if X_train.size > 0:
+                            X_train_reshaped = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+                            lstm_model = create_tuned_lstm_model(X_train_reshaped)
+                            lstm_model.fit(X_train_reshaped, y_train, epochs=50, batch_size=32, verbose=0)
+                            lstm_may_pred = scaler.inverse_transform(lstm_model.predict(scaled_train[-12:].reshape(1, 12, 1), verbose=0))[0][0]
+                            lstm_may_error = abs(lstm_may_pred - actual_may_value)
+                            
+                            # 2. Get LSTM's robust Cross-Validation error
+                            lstm_cv_error = perform_lstm_cv(train_df)
+                            
+                            # 3. Calculate the single COMBINED error for LSTM
+                            lstm_combined_error = (0.7 * lstm_cv_error) + (0.3 * lstm_may_error)
+                        else:
+                            st.warning("Skipping LSTM evaluation due to insufficient data.")
+
+                        # 4. Evaluate SARIMA on the single May 2024 point
+                        sarima_order = (1, 1, 1)
+                        seasonal_order = (1, 1, 1, 12)
+                        sarima_model = SARIMAX(train_df['registrations'], order=sarima_order, seasonal_order=seasonal_order).fit(disp=False)
+                        sarima_may_pred = sarima_model.predict(start=len(train_df), end=len(train_df)).iloc[0]
+                        sarima_may_error = abs(sarima_may_pred - actual_may_value)
+
+                    # --- Display Final Evaluation and Winner ---
+                    st.subheader("Final Model Performance Scores")
+                    col1, col2 = st.columns(2)
+                    col1.metric("Tuned LSTM Combined Error", f"{lstm_combined_error:,.0f}")
+                    col2.metric("SARIMA Final Error", f"{sarima_may_error:,.0f}")
+                    
+                    winner = "Tuned LSTM" if lstm_combined_error < sarima_may_error else "SARIMA"
+                    st.success(f"🏆 Best Performing Model: **{winner}**")
+                    st.markdown("---")
+                    
+                    # --- Final Forecast using ONLY the winning model ---
+                    st.header(f"Final Forecast for August 2025 (using {winner})")
+                    final_forecast_volume = 0
+                    
+                    with st.spinner(f"Retraining {winner} on full data and forecasting..."):
+                        if winner == "Tuned LSTM":
+                            time_step = 12
+                            scaler = MinMaxScaler(feature_range=(0, 1))
+                            scaled_full = scaler.fit_transform(city_df)
+                            X_full, y_full = prepare_lstm_data(scaled_full, time_step)
+                            if len(X_full) > 0:
+                                X_full_reshaped = X_full.reshape(X_full.shape[0], X_full.shape[1], 1)
+                                lstm_full_model = create_tuned_lstm_model(X_full_reshaped)
+                                lstm_full_model.fit(X_full_reshaped, y_full, epochs=50, batch_size=32, verbose=0)
+                                temp_input = list(scaled_full[-time_step:].flatten())
+                                lstm_output = []
+                                months_to_forecast = (datetime(2025, 8, 1) - city_df.index.max()).days // 30
+                                for _ in range(months_to_forecast):
+                                    yhat = lstm_full_model.predict(np.array(temp_input[-time_step:]).reshape(1, time_step, 1), verbose=0)
+                                    temp_input.append(yhat[0,0])
+                                    lstm_output.append(yhat[0,0])
+                                final_forecast_volume = scaler.inverse_transform(np.array([[lstm_output[-1]]]))[0][0]
+                        else: # SARIMA is the winner
+                            sarima_model_full = SARIMAX(city_df['registrations'], order=sarima_order, seasonal_order=seasonal_order).fit(disp=False)
+                            months_to_forecast = (datetime(2025, 8, 1) - city_df.index.max()).days // 30
+                            final_forecast_volume = sarima_model_full.get_forecast(steps=months_to_forecast).predicted_mean.iloc[-1]
+                    
+                    # --- Display the Single Best Forecast ---
+                    cluster_area = get_cluster_area(selected_cluster)
+                    st.metric("Predicted Volume (August 2025)", f"{int(final_forecast_volume):,}")
+                    st.metric("Predicted Density / 1000 km²", f"{(final_forecast_volume / cluster_area) * 1000:.2f}" if cluster_area > 0 else "N/A")
+
+                else:
+                    st.warning("Not enough data to run forecast. Requires >12 months of data and a valid value for May 2024.")
+
+if __name__ == "__main__":
+    main()
