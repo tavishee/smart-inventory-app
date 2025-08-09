@@ -4,6 +4,6 @@ numpy
 plotly
 scikit-learn
 tensorflow
-prophet
 matplotlib
 openpyxl
+statsmodels
