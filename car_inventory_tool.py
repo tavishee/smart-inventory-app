@@ -51,54 +51,72 @@ def assign_state_cluster(row):
     return code
 
 # -------------------------
-# Feature 1: Buying Strength Processing Logic (MODIFIED for State-by-State Vehicle Class)
+# Feature 1: Buying Strength Processing Logic (MODIFIED to perform BOTH analyses)
 # -------------------------
 def process_rto_data_for_strength(uploaded_file):
     """
-    Processes the uploaded data file to calculate buying strength of vehicle classes
-    on a per-state-cluster basis.
-    Returns a single, detailed DataFrame.
+    Processes uploaded data to perform two analyses:
+    1. The original state-cluster buying strength.
+    2. A new, detailed breakdown of vehicle classes within each state-cluster.
+    Returns a tuple of two DataFrames: (cluster_result, vehicle_class_result).
     """
     try:
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
     except Exception as e:
         st.error(f"Error reading the uploaded file: {e}")
-        return None
+        return None, None
 
-    # --- Standardize Column Names and Data ---
+    # Standardize column names for registrations
     if 'registratio' in df.columns and 'registrations' not in df.columns:
         df = df.rename(columns={'registratio': 'registrations'})
+        
+    cluster_result = None
+    vehicle_class_result = None
 
-    required_cols = {'office_code', 'registrations', 'Type of Class'}
-    if not required_cols.issubset(df.columns):
-        st.error("Uploaded file must contain 'office_code', 'registrations', and 'Type of Class' columns for this analysis.")
-        return None
+    # --- Part 1: Original State Cluster Analysis ---
+    df_cluster = df.copy()
+    required_cols_cluster = {'office_code', 'registrations', 'class_type'}
+    if required_cols_cluster.issubset(df_cluster.columns):
+        df_cluster['class_type'] = df_cluster['class_type'].astype(str).str.strip().str.lower()
+        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'm-cycle/scooter'}
+        df_cluster = df_cluster[df_cluster['class_type'].isin(allowed_classes)]
+        df_cluster['state_code'] = df_cluster['office_code'].apply(extract_office_prefix)
+        df_cluster['City_Cluster'] = df_cluster.apply(assign_state_cluster, axis=1)
+        df_cluster = df_cluster.dropna(subset=['City_Cluster'])
+        
+        if not df_cluster.empty:
+            cluster_scores = df_cluster.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
+            cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
+            cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
+            cluster_scores['Cluster_Area_km2'] = cluster_scores['City_Cluster'].apply(get_cluster_area)
+            cluster_scores['Demand_Density_per_1000_km2'] = (cluster_scores['Total_Registrations'] / cluster_scores['Cluster_Area_km2']) * 1000
+            cluster_result = cluster_scores.sort_values('Buying_Strength_Score', ascending=False)
+    else:
+        st.warning("Original state analysis skipped: requires 'office_code', 'registrations', 'class_type' columns.")
 
-    # --- Data Cleaning and Feature Engineering ---
-    df['state_code'] = df['office_code'].apply(extract_office_prefix)
-    df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
+    # --- Part 2: New Vehicle Class by State Analysis ---
+    df_vehicle = df.copy()
+    required_cols_vehicle = {'office_code', 'registrations', 'Type of Class'}
+    if required_cols_vehicle.issubset(df_vehicle.columns):
+        df_vehicle['state_code'] = df_vehicle['office_code'].apply(extract_office_prefix)
+        df_vehicle['City_Cluster'] = df_vehicle.apply(assign_state_cluster, axis=1)
+        df_vehicle = df_vehicle.dropna(subset=['City_Cluster', 'Type of Class', 'registrations'])
+        df_vehicle['Vehicle Class'] = df_vehicle['Type of Class'].astype(str).str.strip().str.lower().replace({'sux': 'suv'})
+        df_vehicle['registrations'] = pd.to_numeric(df_vehicle['registrations'], errors='coerce').fillna(0)
 
-    df = df.dropna(subset=['City_Cluster', 'Type of Class', 'registrations'])
-    df['Vehicle Class'] = df['Type of Class'].astype(str).str.strip().str.lower()
-    df['Vehicle Class'] = df['Vehicle Class'].replace({'sux': 'suv'})
-    df['registrations'] = pd.to_numeric(df['registrations'], errors='coerce').fillna(0)
+        target_classes = ['suv', 'xuv', 'sedan', 'utility', 'luxury']
+        df_filtered = df_vehicle[df_vehicle['Vehicle Class'].isin(target_classes)]
 
-    target_classes = ['suv', 'xuv', 'sedan', 'utility', 'luxury']
-    df_filtered = df[df['Vehicle Class'].isin(target_classes)]
+        if not df_filtered.empty:
+            analysis_df = df_filtered.groupby(['City_Cluster', 'Vehicle Class'])['registrations'].sum().reset_index()
+            analysis_df = analysis_df.rename(columns={'registrations': 'Total Registrations'})
+            cluster_totals = analysis_df.groupby('City_Cluster')['Total Registrations'].transform('sum')
+            analysis_df['Buying Strength (% Share)'] = round((analysis_df['Total Registrations'] / cluster_totals) * 100, 2)
+            vehicle_class_result = analysis_df.sort_values(['City_Cluster', 'Total Registrations'], ascending=[True, False])
+    else:
+        st.warning("Vehicle class analysis skipped: requires 'office_code', 'registrations', 'Type of Class' columns.")
 
-    if df_filtered.empty:
-        st.warning("No data found for the target vehicle classes (suv, xuv, sedan, utility, luxury).")
-        return None
-
-    # --- Perform Grouping by Cluster and Vehicle Class ---
-    analysis_df = df_filtered.groupby(['City_Cluster', 'Vehicle Class'])['registrations'].sum().reset_index()
-    analysis_df = analysis_df.rename(columns={'registrations': 'Total Registrations'})
-    
-    # Calculate Buying Strength (Market Share %) within each cluster
-    cluster_totals = analysis_df.groupby('City_Cluster')['Total Registrations'].transform('sum')
-    analysis_df['Buying Strength (% Share in Cluster)'] = round((analysis_df['Total Registrations'] / cluster_totals) * 100, 2)
-
-    return analysis_df.sort_values(['City_Cluster', 'Total Registrations'], ascending=[True, False])
+    return cluster_result, vehicle_class_result
 
 
 # -------------------------
@@ -150,6 +168,7 @@ def process_rto_data_from_zip(uploaded_zip_file):
     full_df = full_df.dropna(subset=['City_Cluster'])
     return full_df.groupby(['date', 'City_Cluster'])['registrations'].sum().reset_index()
 
+# THIS IS THE CV FUNCTION FOR LSTM ONLY
 def perform_lstm_cv(data, n_splits=4, time_step=12):
     st.write(f"--- Running {n_splits}-Fold Cross-Validation for Tuned LSTM ---")
     tscv = TimeSeriesSplit(n_splits=n_splits)
@@ -183,72 +202,58 @@ def main():
     feature_choice = st.sidebar.radio("Choose a feature:", ("Buying Strength Analysis", "Demand Forecasting"))
 
     if feature_choice == "Buying Strength Analysis":
-        st.title("🚗 Vehicle Buying Strength by State and Class")
-        st.markdown("This tool analyzes buying strength for specific vehicle classes within each state/cluster. Upload a file to begin.")
-        uploaded_file = st.file_uploader("Upload your vehicle registration data file (CSV/Excel)", type=['csv', 'xlsx'])
-
+        st.title("🚗 Used Car Market - Buying Strength Analysis")
+        st.markdown("This tool ranks states by buying strength and analyzes vehicle class demand within each state.")
+        uploaded_file = st.file_uploader("Upload a single vehicle registration data file (CSV/Excel)", type=['csv', 'xlsx'])
+        
         if uploaded_file:
-            analysis_df = process_rto_data_for_strength(uploaded_file)
+            cluster_result, vehicle_class_result = process_rto_data_for_strength(uploaded_file)
+            
+            # --- Section 1: Display Original State-wise Cluster Analysis (Restored) ---
+            if cluster_result is not None:
+                st.header("Part 1: State-wise Buying Strength Analysis")
+                st.success("✅ Processed state-wise analysis successfully.")
+                st.dataframe(cluster_result)
+                
+                fig = go.Figure(data=[go.Bar(y=cluster_result['City_Cluster'], x=cluster_result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue')])
+                fig.update_layout(title='📊 Buying Strength Score by State Cluster', height=max(400, len(cluster_result) * 35))
+                st.plotly_chart(fig, use_container_width=True)
+                
+                fig_density = go.Figure(data=[go.Bar(y=cluster_result['City_Cluster'], x=cluster_result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange')])
+                fig_density.update_layout(title='🌐 Demand Density per 1000 km² by State Cluster', height=max(400, len(cluster_result) * 35))
+                st.plotly_chart(fig_density, use_container_width=True)
+                
+                st.download_button("📥 Download State-wise Results", cluster_result.to_csv(index=False), "buying_strength_by_state.csv", 'text/csv', key='download_cluster')
+            
+            st.markdown("---")
 
-            if analysis_df is not None and not analysis_df.empty:
-                st.success("✅ Data processed successfully. Select a state/cluster to view the analysis.")
-
-                all_clusters = sorted(analysis_df['City_Cluster'].unique())
+            # --- Section 2: Display New Vehicle Class by State Analysis (Added) ---
+            if vehicle_class_result is not None:
+                st.header("Part 2: Vehicle Class Buying Strength (by State)")
+                st.success("✅ Processed vehicle class analysis successfully. Select a state below.")
+                
+                all_clusters = sorted(vehicle_class_result['City_Cluster'].unique())
                 selected_cluster = st.selectbox("Select a State/Cluster to Analyze:", all_clusters)
 
                 if selected_cluster:
-                    st.header(f"Vehicle Class Analysis for: {selected_cluster}")
+                    cluster_data = vehicle_class_result[vehicle_class_result['City_Cluster'] == selected_cluster]
 
-                    cluster_data = analysis_df[analysis_df['City_Cluster'] == selected_cluster]
-
+                    st.subheader(f"Analysis for: {selected_cluster}")
+                    
                     # Display Bar chart for total registrations
-                    bar_fig = go.Figure(data=[go.Bar(
-                        x=cluster_data['Vehicle Class'],
-                        y=cluster_data['Total Registrations'],
-                        text=cluster_data['Total Registrations'],
-                        textposition='auto',
-                        marker_color='royalblue'
-                    )])
-                    bar_fig.update_layout(
-                        title=f'📊 Total Registrations by Vehicle Class in {selected_cluster}',
-                        xaxis_title='Vehicle Class',
-                        yaxis_title='Total Registrations',
-                        xaxis={'categoryorder':'total descending'}
-                    )
+                    bar_fig = go.Figure(data=[go.Bar(x=cluster_data['Vehicle Class'], y=cluster_data['Total Registrations'], text=cluster_data['Total Registrations'], textposition='auto', marker_color='mediumseagreen')])
+                    bar_fig.update_layout(title=f'📊 Total Registrations by Vehicle Class in {selected_cluster}', xaxis_title='Vehicle Class', yaxis_title='Total Registrations', xaxis={'categoryorder':'total descending'})
                     st.plotly_chart(bar_fig, use_container_width=True)
                     
                     # Display Pie chart for market share
-                    pie_fig = go.Figure(data=[go.Pie(
-                        labels=cluster_data['Vehicle Class'],
-                        values=cluster_data['Total Registrations'],
-                        textinfo='percent+label',
-                        hole=.3
-                    )])
-                    pie_fig.update_layout(
-                        title=f'📈 Vehicle Class Market Share in {selected_cluster}'
-                    )
+                    pie_fig = go.Figure(data=[go.Pie(labels=cluster_data['Vehicle Class'], values=cluster_data['Total Registrations'], textinfo='percent+label', hole=.3)])
+                    pie_fig.update_layout(title=f'📈 Vehicle Class Market Share in {selected_cluster}')
                     st.plotly_chart(pie_fig, use_container_width=True)
 
-                    # Display data table
-                    st.subheader("Detailed Data")
                     st.dataframe(cluster_data)
-
-                    st.download_button(
-                        label=f"📥 Download Data for {selected_cluster}",
-                        data=cluster_data.to_csv(index=False),
-                        file_name=f"buying_strength_{selected_cluster}.csv",
-                        mime='text/csv',
-                        key='download_filtered'
-                    )
-                
-                st.markdown("---")
-                st.download_button(
-                    label="📥 Download Full Analysis Data (All Clusters)",
-                    data=analysis_df.to_csv(index=False),
-                    file_name="full_vehicle_class_analysis.csv",
-                    mime='text/csv',
-                    key='download_full'
-                )
+            
+            if cluster_result is None and vehicle_class_result is None:
+                st.error("Could not process the file. Please ensure it is formatted correctly and contains the required columns for either analysis.")
 
     elif feature_choice == "Demand Forecasting":
         # (The forecasting feature remains unchanged)
