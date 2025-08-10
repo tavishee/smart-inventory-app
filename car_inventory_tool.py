@@ -51,33 +51,87 @@ def assign_state_cluster(row):
     return code
 
 # -------------------------
-# Feature 1: Buying Strength Processing Logic
+# Feature 1: Buying Strength Processing Logic (MODIFIED)
 # -------------------------
 def process_rto_data_for_strength(uploaded_file):
+    """
+    Processes the uploaded data file to calculate two metrics:
+    1. Buying Strength by State Cluster.
+    2. Buying Strength by Vehicle Class.
+    Returns a tuple of two DataFrames: (cluster_scores, vehicle_class_strength).
+    """
     try:
         df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-        required_cols = {'office_name', 'office_code', 'registrations', 'class_type'}
-        if not required_cols.issubset(df.columns):
-            st.error("Uploaded file must contain 'office_name', 'office_code', 'registrations', and 'class_type' columns")
-            return None
-        df['class_type'] = df['class_type'].astype(str).str.strip().str.lower()
-        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'm-cycle/scooter'}
-        df = df[df['class_type'].isin(allowed_classes)]
-        df['state_code'] = df['office_code'].apply(extract_office_prefix)
-        df['City_Cluster'] = df.apply(assign_state_cluster, axis=1)
-        df = df.dropna(subset=['City_Cluster'])
-        if df.empty:
-            st.warning("Filtered dataset is empty. Please check input data.")
-            return None
-        cluster_scores = df.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
-        cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
-        cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
-        cluster_scores['Cluster_Area_km2'] = cluster_scores['City_Cluster'].apply(get_cluster_area)
-        cluster_scores['Demand_Density_per_1000_km2'] = (cluster_scores['Total_Registrations'] / cluster_scores['Cluster_Area_km2']) * 1000
-        return cluster_scores.sort_values('Buying_Strength_Score', ascending=False)
     except Exception as e:
-        st.error(f"Error processing data for Buying Strength: {e}")
-        return None
+        st.error(f"Error reading the uploaded file: {e}")
+        return None, None
+
+    # --- Analysis 1: Buying Strength by State Cluster (Original Logic) ---
+    cluster_scores = None
+    df_cluster = df.copy()
+    required_cols_cluster = {'office_code', 'registrations', 'class_type'}
+    if required_cols_cluster.issubset(df_cluster.columns):
+        df_cluster['class_type'] = df_cluster['class_type'].astype(str).str.strip().str.lower()
+        allowed_classes = {'motor car', 'luxury cab', 'maxi cab', 'm-cycle/scooter'}
+        df_cluster = df_cluster[df_cluster['class_type'].isin(allowed_classes)]
+        df_cluster['state_code'] = df_cluster['office_code'].apply(extract_office_prefix)
+        df_cluster['City_Cluster'] = df_cluster.apply(assign_state_cluster, axis=1)
+        df_cluster = df_cluster.dropna(subset=['City_Cluster'])
+
+        if not df_cluster.empty:
+            cluster_scores = df_cluster.groupby('City_Cluster')['registrations'].sum().reset_index(name='Total_Registrations')
+            cluster_scores['Volume_Score'] = (cluster_scores['Total_Registrations'] / cluster_scores['Total_Registrations'].sum()) * 1000
+            cluster_scores['Buying_Strength_Score'] = cluster_scores['Volume_Score']
+            cluster_scores['Cluster_Area_km2'] = cluster_scores['City_Cluster'].apply(get_cluster_area)
+            cluster_scores['Demand_Density_per_1000_km2'] = (cluster_scores['Total_Registrations'] / cluster_scores['Cluster_Area_km2']) * 1000
+            cluster_scores = cluster_scores.sort_values('Buying_Strength_Score', ascending=False)
+        else:
+            st.warning("No data found for state cluster analysis based on `class_type`.")
+    else:
+        st.warning("Skipping state cluster analysis. Required columns: 'office_code', 'registrations', 'class_type'.")
+
+    # --- Analysis 2: Buying Strength by Vehicle Class (New Logic) ---
+    vehicle_class_strength = None
+    df_vehicle = df.copy()
+    
+    # Identify correct column names based on data sample and code
+    vehicle_class_col = 'Type of Class' if 'Type of Class' in df_vehicle.columns else None
+    registrations_col = None
+    if 'registrations' in df_vehicle.columns:
+        registrations_col = 'registrations'
+    elif 'registratio' in df_vehicle.columns:
+        registrations_col = 'registratio'
+        df_vehicle = df_vehicle.rename(columns={'registratio': 'registrations'})
+        registrations_col = 'registrations'
+
+    if vehicle_class_col and registrations_col:
+        df_vehicle = df_vehicle.dropna(subset=[vehicle_class_col, registrations_col])
+        df_vehicle[vehicle_class_col] = df_vehicle[vehicle_class_col].astype(str).str.strip().str.lower()
+        df_vehicle[registrations_col] = pd.to_numeric(df_vehicle[registrations_col], errors='coerce').fillna(0)
+
+        # Normalize vehicle class names (e.g., handle 'sux' -> 'suv')
+        df_vehicle[vehicle_class_col] = df_vehicle[vehicle_class_col].replace({'sux': 'suv'})
+        target_classes = ['suv', 'xuv', 'sedan', 'utility', 'luxury']
+        
+        df_vehicle_filtered = df_vehicle[df_vehicle[vehicle_class_col].isin(target_classes)]
+
+        if not df_vehicle_filtered.empty:
+            vehicle_class_strength = df_vehicle_filtered.groupby(vehicle_class_col)[registrations_col].sum().reset_index()
+            vehicle_class_strength.columns = ['Vehicle Class', 'Total Registrations']
+            
+            total_regs = vehicle_class_strength['Total Registrations'].sum()
+            if total_regs > 0:
+                vehicle_class_strength['Buying Strength Score'] = (vehicle_class_strength['Total Registrations'] / total_regs) * 1000
+            else:
+                vehicle_class_strength['Buying Strength Score'] = 0
+            
+            vehicle_class_strength = vehicle_class_strength.sort_values('Buying Strength Score', ascending=False)
+        else:
+            st.warning("No data found for vehicle classes: suv, xuv, sedan, utility, luxury in the `Type of Class` column.")
+    else:
+        st.warning("Skipping vehicle class analysis. Required columns: `Type of Class` and `registrations` (or `registratio`).")
+
+    return cluster_scores, vehicle_class_strength
 
 # -------------------------
 # Feature 2: Forecasting Model & Data Processing Functions
@@ -128,7 +182,6 @@ def process_rto_data_from_zip(uploaded_zip_file):
     full_df = full_df.dropna(subset=['City_Cluster'])
     return full_df.groupby(['date', 'City_Cluster'])['registrations'].sum().reset_index()
 
-# THIS IS THE CV FUNCTION FOR LSTM ONLY
 def perform_lstm_cv(data, n_splits=4, time_step=12):
     st.write(f"--- Running {n_splits}-Fold Cross-Validation for Tuned LSTM ---")
     tscv = TimeSeriesSplit(n_splits=n_splits)
@@ -154,7 +207,7 @@ def perform_lstm_cv(data, n_splits=4, time_step=12):
 
 
 # -------------------------
-# Main Streamlit UI
+# Main Streamlit UI (MODIFIED)
 # -------------------------
 def main():
     st.set_page_config(layout="wide")
@@ -162,23 +215,59 @@ def main():
     feature_choice = st.sidebar.radio("Choose a feature:", ("Buying Strength Analysis", "Demand Forecasting"))
 
     if feature_choice == "Buying Strength Analysis":
-        st.title("🚗 Used Car Market - State-wise Buying Strength Analysis")
-        st.markdown("This tool ranks states by buying strength using a single data file.")
+        st.title("🚗 Used Car Market - Buying Strength Analysis")
+        st.markdown("This tool analyzes buying strength from a single data file, broken down by **State Cluster** and **Vehicle Class**.")
         uploaded_file = st.file_uploader("Upload a single vehicle registration data file (CSV/Excel)", type=['csv', 'xlsx'])
+        
         if uploaded_file:
-            result = process_rto_data_for_strength(uploaded_file)
-            if result is not None:
-                st.success("✅ Processed successfully.")
-                st.dataframe(result)
-                fig = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue')])
-                fig.update_layout(title='📊 Buying Strength Score by State Cluster', height=800)
+            cluster_result, vehicle_class_result = process_rto_data_for_strength(uploaded_file)
+            
+            # --- Display Cluster Analysis (if available) ---
+            if cluster_result is not None:
+                st.header("Analysis 1: Buying Strength by State Cluster")
+                st.dataframe(cluster_result)
+                
+                fig = go.Figure(data=[go.Bar(y=cluster_result['City_Cluster'], x=cluster_result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue')])
+                fig.update_layout(title='📊 Buying Strength Score by State Cluster', height=max(400, len(cluster_result) * 35))
                 st.plotly_chart(fig, use_container_width=True)
-                fig_density = go.Figure(data=[go.Bar(y=result['City_Cluster'], x=result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange')])
-                fig_density.update_layout(title='🌐 Demand Density per 1000 km² by State Cluster', height=800)
+                
+                fig_density = go.Figure(data=[go.Bar(y=cluster_result['City_Cluster'], x=cluster_result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange')])
+                fig_density.update_layout(title='🌐 Demand Density per 1000 km² by State Cluster', height=max(400, len(cluster_result) * 35))
                 st.plotly_chart(fig_density, use_container_width=True)
-                st.download_button("📥 Download Results", result.to_csv(index=False), f"buying_strength.csv", 'text/csv')
+                
+                st.download_button("📥 Download Cluster Results", cluster_result.to_csv(index=False), "buying_strength_by_cluster.csv", 'text/csv', key='download_cluster')
+
+            st.markdown("---") # Visual separator
+
+            # --- Display Vehicle Class Analysis (if available) ---
+            if vehicle_class_result is not None:
+                st.header("Analysis 2: Buying Strength by Vehicle Class")
+                st.dataframe(vehicle_class_result)
+                
+                fig_vehicle = go.Figure(data=[go.Bar(
+                    x=vehicle_class_result['Vehicle Class'],
+                    y=vehicle_class_result['Total Registrations'],
+                    text=vehicle_class_result['Total Registrations'],
+                    textposition='auto',
+                    name='Total Registrations',
+                    marker_color='mediumseagreen'
+                )])
+                fig_vehicle.update_layout(
+                    title='📊 Total Registrations by Vehicle Class',
+                    xaxis_title='Vehicle Class',
+                    yaxis_title='Total Registrations',
+                    xaxis={'categoryorder':'total descending'}
+                )
+                st.plotly_chart(fig_vehicle, use_container_width=True)
+                
+                st.download_button("📥 Download Vehicle Class Results", vehicle_class_result.to_csv(index=False), "buying_strength_by_vehicle_class.csv", 'text/csv', key='download_vehicle_class')
+            
+            if cluster_result is None and vehicle_class_result is None:
+                st.error("Could not process the file. Please ensure it is formatted correctly and contains the required columns.")
+
 
     elif feature_choice == "Demand Forecasting":
+        # (The forecasting feature remains unchanged)
         st.title("📈 Monthly Demand Forecasting Tool (Tuned LSTM vs. SARIMA)")
         st.markdown("This tool evaluates Tuned LSTM and SARIMA models to provide forecasts for August 2025.")
         uploaded_zip_file = st.file_uploader("Upload a single ZIP file with monthly data (`prefix_YYYY-MM.csv`)", type=['zip'])
@@ -202,7 +291,6 @@ def main():
                     time_step = 12
                     
                     with st.spinner("Evaluating models... This may take a moment."):
-                        # --- LSTM Evaluation ---
                         scaler = MinMaxScaler(feature_range=(0, 1))
                         scaled_train = scaler.fit_transform(train_df)
                         X_train, y_train = prepare_lstm_data(scaled_train, time_step)
@@ -212,28 +300,21 @@ def main():
 
                         if X_train.size > 0:
                             X_train_reshaped = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-                            # 1. Get simple error for May
                             lstm_model = create_tuned_lstm_model(X_train_reshaped)
                             lstm_model.fit(X_train_reshaped, y_train, epochs=50, batch_size=32, verbose=0)
                             lstm_may_pred = scaler.inverse_transform(lstm_model.predict(scaled_train[-time_step:].reshape(1, time_step, 1), verbose=0))[0][0]
                             lstm_may_error = abs(lstm_may_pred - actual_may_value)
-                            
-                            # 2. Get CV error
                             lstm_cv_error = perform_lstm_cv(train_df)
-
-                            # 3. Calculate COMBINED error as requested
                             lstm_combined_error = (0.7 * lstm_cv_error) + (0.3 * lstm_may_error)
                         else:
                             st.warning("Skipping LSTM evaluation due to insufficient data.")
 
-                        # --- SARIMA Evaluation (NO CV) ---
                         sarima_order = (1, 1, 1)
                         seasonal_order = (1, 1, 1, 12)
                         sarima_model = SARIMAX(train_df['registrations'], order=sarima_order, seasonal_order=seasonal_order).fit(disp=False)
                         sarima_may_pred = sarima_model.predict(start=len(train_df), end=len(train_df)).iloc[0]
                         sarima_may_error = abs(sarima_may_pred - actual_may_value)
 
-                    # --- Display the performance of both models ---
                     st.subheader("May 2024 Prediction vs. Actual")
                     col1, col2 = st.columns(2)
                     with col1:
@@ -250,7 +331,6 @@ def main():
                     months_to_forecast = (datetime(2025, 8, 1) - city_df.index.max()).days // 30
                     full_df_ts = city_df.copy()
 
-                    # --- Retrain and forecast with BOTH models ---
                     with st.spinner("Retraining & forecasting with Tuned LSTM..."):
                         scaled_full = scaler.fit_transform(full_df_ts)
                         X_full, y_full = prepare_lstm_data(scaled_full, time_step)
@@ -272,7 +352,6 @@ def main():
                         sarima_model_full = SARIMAX(full_df_ts['registrations'], order=sarima_order, seasonal_order=seasonal_order).fit(disp=False)
                         sarima_aug_pred = sarima_model_full.get_forecast(steps=months_to_forecast).predicted_mean.iloc[-1]
                     
-                    # --- Display BOTH final forecasts ---
                     col3, col4 = st.columns(2)
                     with col3:
                         st.write("#### Tuned LSTM Forecast (August 2025)")
@@ -285,7 +364,6 @@ def main():
                         cluster_area = get_cluster_area(selected_cluster)
                         st.metric("Predicted Density / 1000 km²", f"{(sarima_aug_pred / cluster_area) * 1000:.2f}" if cluster_area > 0 else "N/A")
 
-                    # --- Display the final graph ---
                     st.subheader("Visual Comparison of May 2024 Validation")
                     fig, ax = plt.subplots()
                     ax.plot(city_df.index, city_df['registrations'], label='Historical', marker='o', linestyle='-')
