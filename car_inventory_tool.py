@@ -198,11 +198,11 @@ def perform_lstm_cv(data, n_splits=4, time_step=12):
 # -------------------------
 def main():
     st.set_page_config(layout="wide")
-    st.sidebar.title("🛠️ Analysis Tools")
+    st.sidebar.title("Analysis Tools")
     feature_choice = st.sidebar.radio("Choose a feature:", ("Buying Strength Analysis", "Demand Forecasting"))
 
     if feature_choice == "Buying Strength Analysis":
-        st.title("🚗 Used Car Market - Buying Strength Analysis")
+        st.title("Used Car Market - Buying Strength Analysis")
         st.markdown("This tool ranks states by buying strength and analyzes vehicle class demand within each state.")
         uploaded_file = st.file_uploader("Upload a single vehicle registration data file (CSV/Excel)", type=['csv', 'xlsx'])
         
@@ -212,25 +212,25 @@ def main():
             # --- Section 1: Display Original State-wise Cluster Analysis (Restored) ---
             if cluster_result is not None:
                 st.header("Part 1: State-wise Buying Strength Analysis")
-                st.success("✅ Processed state-wise analysis successfully.")
+                st.success("Processed state-wise analysis successfully.")
                 st.dataframe(cluster_result)
                 
                 fig = go.Figure(data=[go.Bar(y=cluster_result['City_Cluster'], x=cluster_result['Buying_Strength_Score'], name='Buying Strength', orientation='h', marker_color='steelblue')])
-                fig.update_layout(title='📊 Buying Strength Score by State Cluster', height=max(400, len(cluster_result) * 35))
+                fig.update_layout(title='Buying Strength Score by State Cluster', height=max(400, len(cluster_result) * 35))
                 st.plotly_chart(fig, use_container_width=True)
                 
                 fig_density = go.Figure(data=[go.Bar(y=cluster_result['City_Cluster'], x=cluster_result['Demand_Density_per_1000_km2'], name='Demand Density', orientation='h', marker_color='darkorange')])
-                fig_density.update_layout(title='🌐 Demand Density per 1000 km² by State Cluster', height=max(400, len(cluster_result) * 35))
+                fig_density.update_layout(title='Demand Density per 1000 km² by State Cluster', height=max(400, len(cluster_result) * 35))
                 st.plotly_chart(fig_density, use_container_width=True)
                 
-                st.download_button("📥 Download State-wise Results", cluster_result.to_csv(index=False), "buying_strength_by_state.csv", 'text/csv', key='download_cluster')
+                st.download_button("Download State-wise Results", cluster_result.to_csv(index=False), "buying_strength_by_state.csv", 'text/csv', key='download_cluster')
             
             st.markdown("---")
 
             # --- Section 2: Display New Vehicle Class by State Analysis (Added) ---
             if vehicle_class_result is not None:
                 st.header("Part 2: Vehicle Class Buying Strength (by State)")
-                st.success("✅ Processed vehicle class analysis successfully. Select a state below.")
+                st.success("Processed vehicle class analysis successfully. Select a state below.")
                 
                 all_clusters = sorted(vehicle_class_result['City_Cluster'].unique())
                 selected_cluster = st.selectbox("Select a State/Cluster to Analyze:", all_clusters)
@@ -242,12 +242,12 @@ def main():
                     
                     # Display Bar chart for total registrations
                     bar_fig = go.Figure(data=[go.Bar(x=cluster_data['Vehicle Class'], y=cluster_data['Total Registrations'], text=cluster_data['Total Registrations'], textposition='auto', marker_color='mediumseagreen')])
-                    bar_fig.update_layout(title=f'📊 Total Registrations by Vehicle Class in {selected_cluster}', xaxis_title='Vehicle Class', yaxis_title='Total Registrations', xaxis={'categoryorder':'total descending'})
+                    bar_fig.update_layout(title=f'Total Registrations by Vehicle Class in {selected_cluster}', xaxis_title='Vehicle Class', yaxis_title='Total Registrations', xaxis={'categoryorder':'total descending'})
                     st.plotly_chart(bar_fig, use_container_width=True)
                     
                     # Display Pie chart for market share
                     pie_fig = go.Figure(data=[go.Pie(labels=cluster_data['Vehicle Class'], values=cluster_data['Total Registrations'], textinfo='percent+label', hole=.3)])
-                    pie_fig.update_layout(title=f'📈 Vehicle Class Market Share in {selected_cluster}')
+                    pie_fig.update_layout(title=f'Vehicle Class Market Share in {selected_cluster}')
                     st.plotly_chart(pie_fig, use_container_width=True)
 
                     st.dataframe(cluster_data)
@@ -257,13 +257,13 @@ def main():
 
     elif feature_choice == "Demand Forecasting":
         # (The forecasting feature remains unchanged)
-        st.title("📈 Monthly Demand Forecasting Tool (Tuned LSTM vs. SARIMA)")
+        st.title("Monthly Demand Forecasting Tool (Tuned LSTM vs. SARIMA)")
         st.markdown("This tool evaluates Tuned LSTM and SARIMA models to provide forecasts for August 2025.")
         uploaded_zip_file = st.file_uploader("Upload a single ZIP file with monthly data (`prefix_YYYY-MM.csv`)", type=['zip'])
         if uploaded_zip_file:
             df = process_rto_data_from_zip(uploaded_zip_file)
             if df is not None and not df.empty:
-                st.success("✅ ZIP file processed successfully.")
+                st.success("ZIP file processed successfully.")
                 all_clusters = sorted(df['City_Cluster'].unique())
                 selected_cluster = st.selectbox("Select a City/Cluster to Forecast:", all_clusters)
                 city_df = df[df['City_Cluster'] == selected_cluster].set_index('date')[['registrations']].resample('MS').sum().sort_index()
@@ -368,3 +368,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
