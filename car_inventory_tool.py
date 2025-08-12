@@ -217,7 +217,7 @@ def main():
         # REMOVED file uploader, now loads from URL
         try:
             with st.spinner(f"Downloading data from GitHub..."):
-                response = requests.get(https://github.com/tavishee/smart-inventory-app/blob/main/car_data.parquet)
+                response = requests.get("https://github.com/tavishee/smart-inventory-app/raw/refs/heads/main/car_data.parquet")
                 response.raise_for_status() # Raise an exception for bad status codes
             
             with st.spinner("Processing data... This may take a moment for the first run."):
@@ -261,7 +261,7 @@ def main():
         # REMOVED file uploader, now loads from URL
         try:
             with st.spinner("Downloading forecast data from GitHub..."):
-                response = requests.get(https://github.com/tavishee/smart-inventory-app/blob/main/split_by_month.zip)
+                response = requests.get("https://github.com/tavishee/smart-inventory-app/raw/refs/heads/main/split_by_month.zip")
                 response.raise_for_status()
             
             with st.spinner("Processing forecast data..."):
@@ -286,5 +286,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
