@@ -261,7 +261,7 @@ def main():
         # REMOVED file uploader, now loads from URL
         try:
             with st.spinner("Downloading forecast data from GitHub..."):
-                response = requests.get(forecasting_data_zip_url)
+                response = requests.get(https://github.com/tavishee/smart-inventory-app/blob/main/split_by_month.zip)
                 response.raise_for_status()
             
             with st.spinner("Processing forecast data..."):
@@ -286,3 +286,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
